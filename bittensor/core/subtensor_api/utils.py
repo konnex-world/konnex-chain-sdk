@@ -152,6 +152,7 @@ def add_legacy_methods(subtensor: "SubtensorApi"):
     subtensor.subnet_exists = subtensor._subtensor.subnet_exists
     subtensor.subnetwork_n = subtensor._subtensor.subnetwork_n
     subtensor.substrate = subtensor._subtensor.substrate
+    subtensor.task_scopes = subtensor.task_scopes
     subtensor.swap_stake = subtensor._subtensor.swap_stake
     subtensor.tempo = subtensor._subtensor.tempo
     subtensor.transfer = subtensor._subtensor.transfer

@@ -238,3 +238,25 @@ def test_unlock_key_errors(fake_wallet, side_effect, response):
 def test_hex_to_bytes(hex_str, response):
     result = utils.hex_to_bytes(hex_str)
     assert result == response
+
+
+def test_task_scope_happy_path():
+    scope = utils.TaskScope(subnet_id=1, task_id="task-001")
+    assert scope.subnet_id == 1
+    assert scope.task_id == "task-001"
+    assert scope.key == (1, "task-001")
+
+
+@pytest.mark.parametrize("subnet_id", [-1, True, "1"])
+def test_task_scope_invalid_subnet_id(subnet_id):
+    with pytest.raises((TypeError, ValueError)):
+        utils.TaskScope(subnet_id=subnet_id, task_id="task-001")
+
+
+@pytest.mark.parametrize(
+    "task_id",
+    ["", " task", "task ", "task with space", "x" * 129, 123],
+)
+def test_task_scope_invalid_task_id(task_id):
+    with pytest.raises((TypeError, ValueError)):
+        utils.TaskScope(subnet_id=1, task_id=task_id)

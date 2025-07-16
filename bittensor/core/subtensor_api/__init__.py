@@ -11,6 +11,7 @@ from .neurons import Neurons as _Neurons
 from .queries import Queries as _Queries
 from .staking import Staking as _Staking
 from .subnets import Subnets as _Subnets
+from .task_scopes import TaskScopes as _TaskScopes
 from .utils import add_legacy_methods as _add_classic_fields
 from .wallets import Wallets as _Wallets
 
@@ -250,3 +251,8 @@ class SubtensorApi:
     def wallets(self):
         """Property of interaction methods with cold/hotkeys, and balances, etc."""
         return _Wallets(self._subtensor)
+
+    @property
+    def task_scopes(self):
+        """Property for subnet-aware `(subnet_id, task_id)` helpers."""
+        return _TaskScopes(self._subtensor)
