@@ -1,4 +1,4 @@
-from typing import Optional, Union
+from typing import Any, Optional, Union
 from bittensor.core.subtensor import Subtensor as _Subtensor
 from bittensor.core.async_subtensor import AsyncSubtensor as _AsyncSubtensor
 from .task_scopes import TaskScopes as _TaskScopes
@@ -26,11 +26,14 @@ class Queries:
         subnet_id: int,
         task_id: str,
         block: Optional[int] = None,
-    ):
+    ) -> Any:
         """
-        Query Subtensor storage scoped by `(subnet_id, task_id)`.
+        Query `SubtensorModule` storage scoped by `(subnet_id, task_id)`.
 
-        For async subtensor instances this returns an awaitable.
+        `storage_name` is the `storage_function` name on `SubtensorModule` (must exist
+        on-chain once Konnex runtime pallets are wired).
+
+        For async subtensor instances this returns an awaitable coroutine.
         """
         return self.query_subtensor(
             name=storage_name,

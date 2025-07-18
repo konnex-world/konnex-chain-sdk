@@ -16,6 +16,7 @@ class TaskScopes:
     """
 
     def __init__(self, subtensor: Union["_Subtensor", "_AsyncSubtensor"]):
+        # Kept for future typed helpers that need the live Subtensor/AsyncSubtensor instance.
         self._subtensor = subtensor
 
     def normalize(self, subnet_id: int, task_id: str) -> TaskScope:

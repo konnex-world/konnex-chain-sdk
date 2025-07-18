@@ -115,7 +115,7 @@ class SubtensorApi:
         self.start_call = self._subtensor.start_call
         self.wait_for_block = self._subtensor.wait_for_block
 
-        # adds all Subtensor methods into main level os SubtensorApi class
+        # adds all Subtensor methods into main level of SubtensorApi class
         if legacy_methods:
             _add_classic_fields(self)
 
