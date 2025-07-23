@@ -20,6 +20,20 @@ class Queries:
         """Return validated canonical params for task-scoped storage queries."""
         return self._task_scopes.scope_params(subnet_id=subnet_id, task_id=task_id)
 
+    def task_scope_call_params(
+        self,
+        subnet_id: int,
+        task_id: str,
+        *,
+        extra_params: Optional[dict[str, Any]] = None,
+    ) -> dict[str, Any]:
+        """Return validated `call_params` dict for task-scoped extrinsics (see `TaskScopes.scope_call_params`)."""
+        return self._task_scopes.scope_call_params(
+            subnet_id=subnet_id,
+            task_id=task_id,
+            extra_params=extra_params,
+        )
+
     def query_subtensor_for_task(
         self,
         storage_name: str,

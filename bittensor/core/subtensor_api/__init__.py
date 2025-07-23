@@ -111,6 +111,10 @@ class SubtensorApi:
         self.determine_block_hash = self._subtensor.determine_block_hash
         self.encode_params = self._subtensor.encode_params
         self.query_subtensor_for_task = self.queries.query_subtensor_for_task
+        self.compose_call_for_task = self.extrinsics.compose_call_for_task
+        self.sign_and_send_extrinsic_for_task = (
+            self.extrinsics.sign_and_send_extrinsic_for_task
+        )
         self.sign_and_send_extrinsic = self._subtensor.sign_and_send_extrinsic
         self.start_call = self._subtensor.start_call
         self.wait_for_block = self._subtensor.wait_for_block
