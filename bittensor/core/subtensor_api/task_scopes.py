@@ -37,6 +37,10 @@ class TaskScopes:
         scope = self.normalize(subnet_id=subnet_id, task_id=task_id)
         return [scope.subnet_id, scope.task_id]
 
+    def scope_params_from_scope(self, scope: TaskScope) -> list[object]:
+        """Return storage query params for an existing `TaskScope` (already validated)."""
+        return [scope.subnet_id, scope.task_id]
+
     def scope_call_params(
         self,
         subnet_id: int,
@@ -60,6 +64,26 @@ class TaskScopes:
             if overlap:
                 raise ValueError(
                     "extra_params must not set subnet_id or task_id; pass them as arguments"
+                )
+            merged.update(extra_params)
+        return merged
+
+    def scope_call_params_from_scope(
+        self,
+        scope: TaskScope,
+        *,
+        extra_params: Optional[dict[str, Any]] = None,
+    ) -> dict[str, Any]:
+        """Like `scope_call_params` but starts from an existing `TaskScope` instance."""
+        merged: dict[str, Any] = {
+            "subnet_id": scope.subnet_id,
+            "task_id": scope.task_id,
+        }
+        if extra_params:
+            overlap = set(extra_params) & {"subnet_id", "task_id"}
+            if overlap:
+                raise ValueError(
+                    "extra_params must not set subnet_id or task_id; use TaskScope fields"
                 )
             merged.update(extra_params)
         return merged

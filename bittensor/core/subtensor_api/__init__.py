@@ -68,6 +68,15 @@ class SubtensorApi:
             retry_forever=True,
         )
         print(subtensor.block)
+
+        # Konnex: task-scoped subnet helpers (validated `subnet_id` + `task_id`)
+        import bittensor as bt
+
+        api = bt.SubtensorApi(network="finney", mock=True)
+        scope = api.task_scopes.normalize(subnet_id=1, task_id="escrow-1")
+        params = api.task_scope_params_from_scope(scope)
+        call_params = api.task_scope_call_params_from_scope(scope, extra_params={"cid": "bafy..."})
+        _ = api.query_subtensor_for_task_from_scope("EscrowByTask", scope, block=None)
     """
 
     def __init__(
@@ -111,6 +120,15 @@ class SubtensorApi:
         self.determine_block_hash = self._subtensor.determine_block_hash
         self.encode_params = self._subtensor.encode_params
         self.query_subtensor_for_task = self.queries.query_subtensor_for_task
+        self.query_subtensor_for_task_from_scope = (
+            self.queries.query_subtensor_for_task_from_scope
+        )
+        self.task_scope_params = self.queries.task_scope_params
+        self.task_scope_call_params = self.queries.task_scope_call_params
+        self.task_scope_params_from_scope = self.queries.task_scope_params_from_scope
+        self.task_scope_call_params_from_scope = (
+            self.queries.task_scope_call_params_from_scope
+        )
         self.compose_call_for_task = self.extrinsics.compose_call_for_task
         self.sign_and_send_extrinsic_for_task = (
             self.extrinsics.sign_and_send_extrinsic_for_task
