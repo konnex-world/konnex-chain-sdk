@@ -208,3 +208,76 @@ def test_query_subtensor_for_task_from_scope_matches_scalar_form(mocker):
     assert spy.call_count == 2
     assert spy.call_args_list[0] == spy.call_args_list[1]
 
+
+def test_compose_call_for_task_from_scope_matches_scalar(mocker):
+    api = SubtensorApi(network="latent-lite", mock=True)
+    compose = mocker.patch.object(api._subtensor.substrate, "compose_call")
+    compose.return_value = "call"
+    scope = api.task_scopes.normalize(3, "proof-9")
+
+    a = api.compose_call_for_task_from_scope(
+        "SubtensorModule",
+        "submit_proof",
+        scope,
+        extra_params={"cid": "x"},
+    )
+    b = api.compose_call_for_task(
+        "SubtensorModule",
+        "submit_proof",
+        subnet_id=3,
+        task_id="proof-9",
+        extra_params={"cid": "x"},
+    )
+
+    assert a == b == "call"
+    assert compose.call_count == 2
+    assert compose.call_args_list[0] == compose.call_args_list[1]
+
+
+@pytest.mark.asyncio
+async def test_sign_and_send_extrinsic_for_task_from_scope_sync(mocker):
+    api = SubtensorApi(network="latent-lite", mock=True)
+    mocker.patch.object(
+        api._subtensor.substrate, "compose_call", return_value="call_obj"
+    )
+    send = mocker.patch.object(
+        api._subtensor, "sign_and_send_extrinsic", return_value=(True, "sent")
+    )
+    scope = api.task_scopes.normalize(8, "task-8")
+    wallet = mocker.MagicMock()
+
+    out = await api.sign_and_send_extrinsic_for_task_from_scope(
+        "SubtensorModule",
+        "escrow_action",
+        scope,
+        wallet,
+        extra_params={"amount": 1},
+        wait_for_inclusion=False,
+    )
+
+    assert out == (True, "sent")
+    send.assert_called_once()
+    assert send.call_args.kwargs["call"] == "call_obj"
+    assert send.call_args.kwargs["wallet"] is wallet
+
+
+@pytest.mark.asyncio
+async def test_sign_and_send_extrinsic_for_task_from_scope_async_subtensor(mocker):
+    api = SubtensorApi(network="latent-lite", mock=True, async_subtensor=True)
+    scope = api.task_scopes.normalize(2, "x")
+
+    async def fake_compose(**kwargs):
+        assert kwargs["call_params"]["subnet_id"] == 2
+        return "c"
+
+    async def fake_send(**kwargs):
+        return (True, "ok")
+
+    mocker.patch.object(api._subtensor.substrate, "compose_call", side_effect=fake_compose)
+    mocker.patch.object(api._subtensor, "sign_and_send_extrinsic", side_effect=fake_send)
+
+    r = await api.sign_and_send_extrinsic_for_task_from_scope(
+        "SubtensorModule", "f", scope, mocker.MagicMock()
+    )
+    assert r == (True, "ok")
+

@@ -1,6 +1,7 @@
 import inspect
 from typing import Any, Optional, TYPE_CHECKING, Union
 
+from bittensor.utils import TaskScope
 from bittensor.core.subtensor import Subtensor as _Subtensor
 from bittensor.core.async_subtensor import AsyncSubtensor as _AsyncSubtensor
 
@@ -65,6 +66,25 @@ class Extrinsics:
             call_params=call_params,
         )
 
+    def compose_call_for_task_from_scope(
+        self,
+        call_module: str,
+        call_function: str,
+        scope: TaskScope,
+        extra_params: Optional[dict[str, Any]] = None,
+    ) -> Any:
+        """
+        Same as ``compose_call_for_task`` but uses a pre-built ``TaskScope``.
+        """
+        call_params = self._task_scopes.scope_call_params_from_scope(
+            scope, extra_params=extra_params
+        )
+        return self._subtensor.substrate.compose_call(
+            call_module=call_module,
+            call_function=call_function,
+            call_params=call_params,
+        )
+
     async def sign_and_send_extrinsic_for_task(
         self,
         call_module: str,
@@ -93,6 +113,48 @@ class Extrinsics:
             call_function=call_function,
             subnet_id=subnet_id,
             task_id=task_id,
+            extra_params=extra_params,
+        )
+        if inspect.isawaitable(call):
+            call = await call
+
+        send = self._subtensor.sign_and_send_extrinsic
+        kwargs = dict(
+            call=call,
+            wallet=wallet,
+            wait_for_inclusion=wait_for_inclusion,
+            wait_for_finalization=wait_for_finalization,
+            sign_with=sign_with,
+            use_nonce=use_nonce,
+            period=period,
+            nonce_key=nonce_key,
+            raise_error=raise_error,
+        )
+        if inspect.iscoroutinefunction(send):
+            return await send(**kwargs)
+        return send(**kwargs)
+
+    async def sign_and_send_extrinsic_for_task_from_scope(
+        self,
+        call_module: str,
+        call_function: str,
+        scope: TaskScope,
+        wallet: "Wallet",
+        extra_params: Optional[dict[str, Any]] = None,
+        *,
+        wait_for_inclusion: bool = True,
+        wait_for_finalization: bool = False,
+        sign_with: str = "coldkey",
+        use_nonce: bool = False,
+        period: Optional[int] = None,
+        nonce_key: str = "hotkey",
+        raise_error: bool = False,
+    ) -> tuple[bool, str]:
+        """Submit a task-scoped extrinsic using a ``TaskScope`` instead of raw ids."""
+        call = self.compose_call_for_task_from_scope(
+            call_module=call_module,
+            call_function=call_function,
+            scope=scope,
             extra_params=extra_params,
         )
         if inspect.isawaitable(call):

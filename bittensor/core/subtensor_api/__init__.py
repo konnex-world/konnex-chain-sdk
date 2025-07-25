@@ -77,6 +77,9 @@ class SubtensorApi:
         params = api.task_scope_params_from_scope(scope)
         call_params = api.task_scope_call_params_from_scope(scope, extra_params={"cid": "bafy..."})
         _ = api.query_subtensor_for_task_from_scope("EscrowByTask", scope, block=None)
+        _ = api.compose_call_for_task_from_scope(
+            "SubtensorModule", "submit_proof", scope, extra_params={"cid": "bafy..."}
+        )
     """
 
     def __init__(
@@ -130,8 +133,14 @@ class SubtensorApi:
             self.queries.task_scope_call_params_from_scope
         )
         self.compose_call_for_task = self.extrinsics.compose_call_for_task
+        self.compose_call_for_task_from_scope = (
+            self.extrinsics.compose_call_for_task_from_scope
+        )
         self.sign_and_send_extrinsic_for_task = (
             self.extrinsics.sign_and_send_extrinsic_for_task
+        )
+        self.sign_and_send_extrinsic_for_task_from_scope = (
+            self.extrinsics.sign_and_send_extrinsic_for_task_from_scope
         )
         self.sign_and_send_extrinsic = self._subtensor.sign_and_send_extrinsic
         self.start_call = self._subtensor.start_call
