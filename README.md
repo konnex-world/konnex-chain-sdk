@@ -1,26 +1,20 @@
 <div align="center">
 
-# **Bittensor SDK** <!-- omit in toc -->
-[![Discord Chat](https://img.shields.io/discord/308323056592486420.svg)](https://discord.gg/bittensor)
-[![CodeQL](https://github.com/opentensor/bittensor/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/opentensor/bittensor/actions)
-[![PyPI version](https://badge.fury.io/py/bittensor.svg)](https://badge.fury.io/py/bittensor)
-[![Codecov](https://codecov.io/gh/opentensor/bittensor/graph/badge.svg)](https://app.codecov.io/gh/opentensor/bittensor)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) 
+# **Konnex Chain SDK** <!-- omit in toc -->
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ---
 
-## Internet-scale Neural Networks <!-- omit in toc -->
+## Robotics Permissionless Market SDK <!-- omit in toc -->
 
-[Discord](https://discord.gg/qasY3HA9F9) • [Network](https://taostats.io/) • [Research](https://bittensor.com/whitepaper) • [Documentation](https://docs.bittensor.com)
+[Konnex Docs](https://docs.konnex.world/) • [Architecture](https://docs.konnex.world/docs/protocol-architecture) • [Robotic AI SubNets](https://docs.konnex.world/robotic-ai-subnets/overview) • [SDK Overview](https://docs.konnex.world/sdk/overview)
 
 </div>
 
-- [Overview of Bittensor](#overview-of-bittensor)
-- [The Bittensor SDK](#the-bittensor-sdk)
-- [Is Bittensor a blockchain or an AI platform?](#is-bittensor-a-blockchain-or-an-ai-platform)
-- [Subnets](#subnets)
-- [Subnet validators and subnet miners](#subnet-validators-and-subnet-miners)
-- [Yuma Consensus](#yuma-consensus)
+- [Overview of Konnex Chain SDK](#overview-of-konnex-chain-sdk)
+- [How This Relates to Bittensor](#how-this-relates-to-bittensor)
+- [Konnex Robotics Flow](#konnex-robotics-flow)
+- [Protocol and Product Docs](#protocol-and-product-docs)
 - [Release Notes](#release-notes)
 - [Install Bittensor SDK](#install-bittensor-sdk)
 - [Upgrade](#upgrade)
@@ -37,40 +31,43 @@
 
 ---
 
-## Overview of Bittensor
+## Overview of Konnex Chain SDK
 
-Welcome! Bittensor is an open source platform on which you can produce competitive digital commodities. These digital commodities can be machine intelligence, storage space, compute power, protein folding, financial markets prediction, and many more. You are rewarded in **TAO** when you produce best digital commodities.
+`konnex-chain-sdk` is a Konnex-focused SDK fork built on top of the Bittensor codebase and Subtensor interaction model. It keeps Bittensor compatibility while adding Konnex-specific chain and product workflows around robotics AI, task-scoped operations, and PoPW-style execution flows.
 
-## The Bittensor SDK
+## How This Relates to Bittensor
 
-The Opentensor Foundation (OTF) provides all the open source tools, including this Bittensor SDK, the codebase and the documentation, with step-by-step tutorials and guides, to enable you to participate in the Bittensor ecosystem. 
+This repository started from upstream `opentensor/bittensor` and continues to use its core primitives (wallet, subtensor/subnets, chain querying, and extrinsics). Konnex changes are layered on top for:
 
-- **Developer documentation**: https://docs.bittensor.com.
-- **A Beginner's Q and A on Bittensor**: https://docs.bittensor.com/questions-and-answers.
-- **Bittensor whitepaper**: https://bittensor.com/whitepaper.
+- task-scoped APIs (`subnet_id` + `task_id`) used by Konnex robotics workloads,
+- integration hooks for robotics execution and verification flows,
+- Konnex-oriented docs and product semantics.
 
-This Bittensor SDK contains ready-to-use Python packages for interacting with the Bittensor ecosystem, writing subnet incentive mechanisms, subnet miners, subnet validators and querying the subtensor (the blockchain part of the Bittensor network). 
+Upstream source and history: [opentensor/bittensor](https://github.com/opentensor/bittensor).
 
 ---
 
-## Is Bittensor a blockchain or an AI platform?
+## Konnex Robotics Flow
 
-In Bittensor there is one blockchain, and many platforms that are connected to this one blockchain. We call these platforms as **subnets**, and this one blockchain  **subtensor**. So, a subnet can be AI-related or it can be something else. The Bittensor network has a number of distinct subnets. All these subnets interact with subtensor blockchain. If you are thinking, "So, subnets are not part of the blockchain but only interact with it?" then the answer is "yes, exactly."
+Konnex positions the network as a permissionless market for robotics AI and verifiable physical work:
 
-## Subnets
+1. A task is broadcast to competing AI policy providers.
+2. Verifiers evaluate outputs and rank policy quality.
+3. The selected policy is executed in physical or simulated robotics environments.
+4. Outcomes are validated as proof-of-execution and settled on-chain.
 
-Each category of the digital commodity is produced in a distinct subnet. Applications are built on these specific subnets. End-users of these applications would be served by these applications.
+This SDK is the chain-facing toolkit that supports those task, verification, and settlement paths in code.
 
-## Subnet validators and subnet miners
+## Protocol and Product Docs
 
-Subnets, which exist outside the blockchain and are connected to it, are off-chain competitions where only the best producers are rewarded. A subnet consists of off-chain **subnet validators** who initiate the competition for a specific digital commodity, and off-chain **subnet miners** who compete and respond by producing the best quality digital commodity.
+- Konnex docs home: [docs.konnex.world](https://docs.konnex.world/)
+- Protocol architecture: [Protocol Architecture](https://docs.konnex.world/docs/protocol-architecture)
+- Robot contracts and PoPW: [Robot-to-Robot Contracts & PoPW](https://docs.konnex.world/docs/robot-to-robot-contracts-and-popw)
+- SDK docs area: [SDK Overview](https://docs.konnex.world/sdk/overview)
 
-## Yuma Consensus
+## Legacy Bittensor Notes
 
-Scores are assigned to the top-performing subnet miners and subnet validators. The on-chain Yuma Consensus determines the TAO rewards for these top performers. The Bittensor blockchain, the subtensor, runs on decentralized validation nodes, just like any blockchain.
-
-**This SDK repo is for Bittensor platform only**
-This Bittensor SDK codebase is for the Bittensor platform only, designed to help developers create subnets and build tools on Bittensor. For subnets and applications, refer to subnet-specific websites, which are maintained by subnet owners.
+Large parts of install and test instructions below still reference upstream Bittensor naming and tooling. Keep that in mind while Konnex-specific docs are expanded.
 
 ## Release Notes
 
