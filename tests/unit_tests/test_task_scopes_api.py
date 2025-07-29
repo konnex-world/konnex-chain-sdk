@@ -72,7 +72,7 @@ def test_scope_call_params_from_scope_matches_scope_call_params():
 def test_scope_call_params_from_scope_rejects_subnet_in_extra():
     api = SubtensorApi(network="latent-lite", mock=True)
     scope = api.task_scopes.normalize(1, "t1")
-    with pytest.raises(ValueError, match="extra_params"):
+    with pytest.raises(ValueError, match="use TaskScope fields"):
         api.task_scopes.scope_call_params_from_scope(
             scope, extra_params={"subnet_id": 2}
         )
@@ -100,7 +100,7 @@ def test_task_scopes_scope_call_params():
 
 def test_task_scopes_scope_call_params_rejects_subnet_override():
     api = SubtensorApi(network="latent-lite", mock=True)
-    with pytest.raises(ValueError, match="extra_params"):
+    with pytest.raises(ValueError, match="pass them as arguments"):
         api.task_scopes.scope_call_params(3, "t-1", extra_params={"subnet_id": 99})
 
 

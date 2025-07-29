@@ -16,7 +16,7 @@
 - [Konnex Robotics Flow](#konnex-robotics-flow)
 - [Protocol and Product Docs](#protocol-and-product-docs)
 - [Release Notes](#release-notes)
-- [Install Bittensor SDK](#install-bittensor-sdk)
+- [Install Konnex Chain SDK](#install-konnex-chain-sdk)
 - [Upgrade](#upgrade)
 - [Install on macOS and Linux](#install-on-macos-and-linux)
   - [Install using a Bash command](#install-using-a-bash-command)
@@ -107,13 +107,13 @@ See [Bittensor SDK Release Notes](https://docs.bittensor.com/bittensor-rel-notes
 
 ---
 
-## Install Bittensor SDK
+## Install Konnex Chain SDK
 
-Before you can start developing, you must install Bittensor SDK and then create Bittensor wallet.
+Before you can start developing, install the SDK and then create a wallet.
 
 ## Upgrade
 
-If you already installed Bittensor SDK, make sure you upgrade to the latest version. Run the below command:
+If you already installed the SDK, upgrade to the latest version:
 
 ```bash
 python3 -m pip install --upgrade bittensor
@@ -123,7 +123,7 @@ python3 -m pip install --upgrade bittensor
 
 ## Install on macOS and Linux
 
-You can install Bittensor SDK on your local machine in either of the following ways. **Make sure you verify your installation after you install**:
+You can install Konnex Chain SDK on your local machine in either of the following ways. **Make sure you verify your installation after installation**:
 - [Install using a Bash command](#install-using-a-bash-command).
 - [Install using `pip3 install`](#install-using-pip3-install)
 - [Install from source](#install-from-source)

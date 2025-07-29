@@ -55,7 +55,9 @@ class Queries:
             scope, extra_params=extra_params
         )
 
-    def task_scope_params_with(self, subnet_id: int, task_id: str, *params: object) -> list[object]:
+    def task_scope_params_with(
+        self, subnet_id: int, task_id: str, *params: object
+    ) -> list[object]:
         """Return canonical task params with extra positional query values appended."""
         return self._task_scopes.extend_params(subnet_id, task_id, *params)
 
@@ -143,11 +145,12 @@ class Queries:
         block: Optional[int] = None,
     ) -> Any:
         """Query arbitrary module storage using task-scoped params + additional params."""
+        scoped_params = self.task_scope_params_with(subnet_id, task_id, *params)
         return self.query_module(
             module=module_name,
             name=storage_name,
             block=block,
-            params=self.task_scope_params_with(subnet_id, task_id, *params),
+            params=scoped_params,
         )
 
     def query_module_for_task_from_scope(
@@ -159,9 +162,10 @@ class Queries:
         block: Optional[int] = None,
     ) -> Any:
         """Query arbitrary module storage using `TaskScope` + additional params."""
+        scoped_params = self.task_scope_params_with_from_scope(scope, *params)
         return self.query_module(
             module=module_name,
             name=storage_name,
             block=block,
-            params=self.task_scope_params_with_from_scope(scope, *params),
+            params=scoped_params,
         )

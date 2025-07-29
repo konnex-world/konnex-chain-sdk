@@ -115,11 +115,7 @@ class Extrinsics:
             task_id=task_id,
             extra_params=extra_params,
         )
-        if inspect.isawaitable(call):
-            call = await call
-
-        send = self._subtensor.sign_and_send_extrinsic
-        kwargs = dict(
+        return await self._dispatch_signed_call(
             call=call,
             wallet=wallet,
             wait_for_inclusion=wait_for_inclusion,
@@ -130,9 +126,6 @@ class Extrinsics:
             nonce_key=nonce_key,
             raise_error=raise_error,
         )
-        if inspect.iscoroutinefunction(send):
-            return await send(**kwargs)
-        return send(**kwargs)
 
     async def sign_and_send_extrinsic_for_task_from_scope(
         self,
@@ -157,6 +150,31 @@ class Extrinsics:
             scope=scope,
             extra_params=extra_params,
         )
+        return await self._dispatch_signed_call(
+            call=call,
+            wallet=wallet,
+            wait_for_inclusion=wait_for_inclusion,
+            wait_for_finalization=wait_for_finalization,
+            sign_with=sign_with,
+            use_nonce=use_nonce,
+            period=period,
+            nonce_key=nonce_key,
+            raise_error=raise_error,
+        )
+
+    async def _dispatch_signed_call(
+        self,
+        call: Any,
+        wallet: "Wallet",
+        wait_for_inclusion: bool,
+        wait_for_finalization: bool,
+        sign_with: str,
+        use_nonce: bool,
+        period: Optional[int],
+        nonce_key: str,
+        raise_error: bool,
+    ) -> tuple[bool, str]:
+        """Resolve sync/async compose call and dispatch to sign_and_send_extrinsic."""
         if inspect.isawaitable(call):
             call = await call
 
