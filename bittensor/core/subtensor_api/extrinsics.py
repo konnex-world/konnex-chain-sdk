@@ -5,6 +5,7 @@ from bittensor.utils import TaskScope
 from bittensor.core.subtensor import Subtensor as _Subtensor
 from bittensor.core.async_subtensor import AsyncSubtensor as _AsyncSubtensor
 
+from .runtime_errors import map_runtime_error
 from .task_scopes import TaskScopes as _TaskScopes
 
 if TYPE_CHECKING:
@@ -191,5 +192,12 @@ class Extrinsics:
             raise_error=raise_error,
         )
         if inspect.iscoroutinefunction(send):
-            return await send(**kwargs)
-        return send(**kwargs)
+            result = await send(**kwargs)
+        else:
+            result = send(**kwargs)
+
+        if raise_error and isinstance(result, tuple) and len(result) >= 2:
+            is_ok, message = result[0], result[1]
+            if is_ok is False:
+                raise map_runtime_error(str(message))
+        return result

@@ -158,3 +158,4 @@ def test_settlement_shortcuts_exposed_on_subtensor_api():
     assert callable(api.can_release_by_popw)
     assert callable(api.guarded_release_call)
     assert callable(api.guarded_submit_release)
+    assert callable(api.map_runtime_error)

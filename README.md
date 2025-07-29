@@ -130,6 +130,9 @@ normalized = api.normalize_popw_status(snapshot["popw_status"])
 print(normalized.decision.value, normalized.releasable)
 ```
 
+For extrinsic failures, task-scoped submit helpers can now map common runtime
+errors into typed SDK exceptions when called with `raise_error=True`.
+
 ## Konnex Network Profiles
 
 The SDK now exposes named network profiles for Konnex environments:

@@ -12,6 +12,7 @@ from .metagraphs import Metagraphs as _Metagraphs
 from .neurons import Neurons as _Neurons
 from .popw import PoPW as _PoPW
 from .queries import Queries as _Queries
+from .runtime_errors import map_runtime_error as _map_runtime_error
 from .settlement import Settlement as _Settlement
 from .staking import Staking as _Staking
 from .subnets import Subnets as _Subnets
@@ -189,6 +190,7 @@ class SubtensorApi:
         self.can_release_by_popw = self.settlement.can_release_by_popw
         self.guarded_release_call = self.settlement.guarded_release_call
         self.guarded_submit_release = self.settlement.guarded_submit_release
+        self.map_runtime_error = _map_runtime_error
 
         # adds all Subtensor methods into main level of SubtensorApi class
         if legacy_methods:
