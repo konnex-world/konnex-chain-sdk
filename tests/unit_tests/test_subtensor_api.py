@@ -154,6 +154,7 @@ def test_popw_shortcuts_exposed_on_subtensor_api():
 def test_settlement_shortcuts_exposed_on_subtensor_api():
     api = SubtensorApi(network="latent-lite", mock=True)
     assert callable(api.settlement_snapshot)
+    assert callable(api.normalize_popw_status)
     assert callable(api.can_release_by_popw)
     assert callable(api.guarded_release_call)
     assert callable(api.guarded_submit_release)

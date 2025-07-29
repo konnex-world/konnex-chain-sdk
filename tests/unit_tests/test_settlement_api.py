@@ -39,6 +39,26 @@ def test_popw_is_approved_variants(value, expected):
     assert api.settlement.popw_is_approved(value) is expected
 
 
+@pytest.mark.parametrize(
+    "value,decision,releasable",
+    [
+        ("pending", "pending", False),
+        ("approved", "approved", True),
+        ("rejected", "rejected", False),
+        ("finalized", "finalized", True),
+        ("mystery", "unknown", False),
+        ({"approved": True}, "approved", True),
+        ({"status": "rejected"}, "rejected", False),
+        (None, "unknown", False),
+    ],
+)
+def test_normalize_popw_status_variants(value, decision, releasable):
+    api = SubtensorApi(network="latent-lite", mock=True)
+    normalized = api.settlement.normalize_popw_status(value)
+    assert normalized.decision.value == decision
+    assert normalized.releasable is releasable
+
+
 def test_guarded_release_call_requires_approved_popw(mocker):
     api = SubtensorApi(network="latent-lite", mock=True)
     helper = api.settlement

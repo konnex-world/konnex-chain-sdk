@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
+from enum import Enum
 from typing import Any, Optional, TYPE_CHECKING, Union
 
 from bittensor.core.subtensor import Subtensor as _Subtensor
@@ -40,32 +42,91 @@ class Settlement:
             ),
         }
 
+    class PopwDecision(str, Enum):
+        PENDING = "pending"
+        APPROVED = "approved"
+        REJECTED = "rejected"
+        FINALIZED = "finalized"
+        UNKNOWN = "unknown"
+
+    @dataclass(frozen=True)
+    class NormalizedPopwStatus:
+        decision: "Settlement.PopwDecision"
+        raw: Any
+        reason: Optional[str] = None
+
+        @property
+        def releasable(self) -> bool:
+            return self.decision in {
+                Settlement.PopwDecision.APPROVED,
+                Settlement.PopwDecision.FINALIZED,
+            }
+
+    @staticmethod
+    def normalize_popw_status(popw_status: Any) -> "Settlement.NormalizedPopwStatus":
+        """Normalize raw PoPW status into deterministic decision enum."""
+        if popw_status is None:
+            return Settlement.NormalizedPopwStatus(
+                decision=Settlement.PopwDecision.UNKNOWN,
+                raw=popw_status,
+                reason="missing status",
+            )
+        if isinstance(popw_status, bool):
+            return Settlement.NormalizedPopwStatus(
+                decision=(
+                    Settlement.PopwDecision.APPROVED
+                    if popw_status
+                    else Settlement.PopwDecision.REJECTED
+                ),
+                raw=popw_status,
+                reason="bool fallback",
+            )
+        if isinstance(popw_status, str):
+            normalized = popw_status.strip().lower()
+            mapping = {
+                "pending": Settlement.PopwDecision.PENDING,
+                "approved": Settlement.PopwDecision.APPROVED,
+                "rejected": Settlement.PopwDecision.REJECTED,
+                "finalized": Settlement.PopwDecision.FINALIZED,
+                "success": Settlement.PopwDecision.FINALIZED,
+            }
+            decision = mapping.get(normalized, Settlement.PopwDecision.UNKNOWN)
+            return Settlement.NormalizedPopwStatus(
+                decision=decision,
+                raw=popw_status,
+                reason=None if decision != Settlement.PopwDecision.UNKNOWN else "unknown string",
+            )
+        if isinstance(popw_status, dict):
+            if isinstance(popw_status.get("approved"), bool):
+                return Settlement.NormalizedPopwStatus(
+                    decision=(
+                        Settlement.PopwDecision.APPROVED
+                        if popw_status["approved"]
+                        else Settlement.PopwDecision.REJECTED
+                    ),
+                    raw=popw_status,
+                )
+            for key in ("outcome", "status", "state"):
+                value = popw_status.get(key)
+                if isinstance(value, str):
+                    return Settlement.normalize_popw_status(value)
+            return Settlement.NormalizedPopwStatus(
+                decision=Settlement.PopwDecision.UNKNOWN,
+                raw=popw_status,
+                reason="dict without recognized keys",
+            )
+        return Settlement.NormalizedPopwStatus(
+            decision=Settlement.PopwDecision.UNKNOWN,
+            raw=popw_status,
+            reason="unsupported type",
+        )
+
     @staticmethod
     def popw_is_approved(popw_status: Any) -> bool:
         """
-        Heuristic approval detector for heterogeneous runtime status formats.
-
-        Accepts booleans, strings (`approved`, `finalized`), or dict payloads with
-        common keys (`approved`, `outcome`, `status`, `state`).
+        Backward-compatible release check based on normalized PoPW decision.
         """
-        if popw_status is None:
-            return False
-        if isinstance(popw_status, bool):
-            return popw_status
-        if isinstance(popw_status, str):
-            return popw_status.strip().lower() in {"approved", "finalized", "success"}
-        if isinstance(popw_status, dict):
-            if isinstance(popw_status.get("approved"), bool):
-                return popw_status["approved"]
-            for key in ("outcome", "status", "state"):
-                value = popw_status.get(key)
-                if isinstance(value, str) and value.strip().lower() in {
-                    "approved",
-                    "finalized",
-                    "success",
-                }:
-                    return True
-        return False
+        return Settlement.normalize_popw_status(popw_status).releasable
 
     def can_release_by_popw(
         self,

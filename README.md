@@ -125,6 +125,9 @@ if api.can_release_by_popw(subnet_id=1, task_id="task-42"):
         task_id="task-42",
         escrow_id=123,
     )
+
+normalized = api.normalize_popw_status(snapshot["popw_status"])
+print(normalized.decision.value, normalized.releasable)
 ```
 
 ## Konnex Network Profiles
