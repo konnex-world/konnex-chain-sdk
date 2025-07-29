@@ -1,5 +1,6 @@
 from typing import Optional, Union, TYPE_CHECKING
 
+from bittensor.core import settings
 from bittensor.core.async_subtensor import AsyncSubtensor as _AsyncSubtensor
 from bittensor.core.subtensor import Subtensor as _Subtensor
 from .chain import Chain as _Chain
@@ -157,10 +158,16 @@ class SubtensorApi:
         self.sign_and_send_extrinsic = self._subtensor.sign_and_send_extrinsic
         self.start_call = self._subtensor.start_call
         self.wait_for_block = self._subtensor.wait_for_block
+        self.konnex_network_profiles = settings.KONNEX_NETWORK_PROFILES
 
         # adds all Subtensor methods into main level of SubtensorApi class
         if legacy_methods:
             _add_classic_fields(self)
+
+    @staticmethod
+    def get_konnex_network_profile(profile_name: str) -> dict[str, object]:
+        """Return endpoint/fallback defaults for a named Konnex network profile."""
+        return settings.get_konnex_network_profile(profile_name)
 
     def _get_subtensor(self) -> Union["_Subtensor", "_AsyncSubtensor"]:
         """Returns the subtensor instance based on the provided config and subtensor type flag."""

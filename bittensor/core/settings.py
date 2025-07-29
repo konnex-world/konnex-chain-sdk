@@ -23,7 +23,16 @@ if not READ_ONLY:
     MINERS_DIR.mkdir(parents=True, exist_ok=True)
 
 # Bittensor networks name
-NETWORKS = ["finney", "test", "archive", "local", "subvortex", "latent-lite"]
+NETWORKS = [
+    "finney",
+    "test",
+    "archive",
+    "local",
+    "subvortex",
+    "latent-lite",
+    "konnex-devnet",
+    "konnex-testnet",
+]
 
 # Bittensor endpoints (Needs to use wss://)
 FINNEY_ENTRYPOINT = "wss://entrypoint-finney.opentensor.ai:443"
@@ -32,6 +41,12 @@ ARCHIVE_ENTRYPOINT = "wss://archive.chain.opentensor.ai:443"
 LOCAL_ENTRYPOINT = os.getenv("BT_SUBTENSOR_CHAIN_ENDPOINT") or "ws://127.0.0.1:9944"
 SUBVORTEX_ENTRYPOINT = "ws://subvortex.info:9944"
 LATENT_LITE_ENTRYPOINT = "wss://lite.sub.latent.to:443"
+KONNEX_DEVNET_ENTRYPOINT = (
+    os.getenv("KONNEX_DEVNET_ENDPOINT") or "ws://127.0.0.1:9944"
+)
+KONNEX_TESTNET_ENTRYPOINT = (
+    os.getenv("KONNEX_TESTNET_ENDPOINT") or "wss://test.finney.opentensor.ai:443"
+)
 
 NETWORK_MAP = {
     NETWORKS[0]: FINNEY_ENTRYPOINT,
@@ -40,6 +55,8 @@ NETWORK_MAP = {
     NETWORKS[3]: LOCAL_ENTRYPOINT,
     NETWORKS[4]: SUBVORTEX_ENTRYPOINT,
     NETWORKS[5]: LATENT_LITE_ENTRYPOINT,
+    NETWORKS[6]: KONNEX_DEVNET_ENTRYPOINT,
+    NETWORKS[7]: KONNEX_TESTNET_ENTRYPOINT,
 }
 
 REVERSE_NETWORK_MAP = {
@@ -50,6 +67,40 @@ REVERSE_NETWORK_MAP = {
     SUBVORTEX_ENTRYPOINT: NETWORKS[4],
     LATENT_LITE_ENTRYPOINT: NETWORKS[5],
 }
+
+KONNEX_NETWORK_PROFILES: dict[str, dict[str, object]] = {
+    "konnex-devnet": {
+        "endpoint": KONNEX_DEVNET_ENTRYPOINT,
+        "fallback_endpoints": [LOCAL_ENTRYPOINT],
+        "archive_endpoints": [ARCHIVE_ENTRYPOINT],
+    },
+    "konnex-testnet": {
+        "endpoint": KONNEX_TESTNET_ENTRYPOINT,
+        "fallback_endpoints": [FINNEY_TEST_ENTRYPOINT],
+        "archive_endpoints": [ARCHIVE_ENTRYPOINT],
+    },
+}
+
+
+def get_konnex_network_profile(profile_name: str) -> dict[str, object]:
+    """
+    Return a copy of a Konnex network profile by name.
+
+    Profiles provide endpoint defaults and fallback/archive endpoint sets for
+    SDK initialization.
+    """
+    if profile_name not in KONNEX_NETWORK_PROFILES:
+        raise KeyError(
+            f"Unknown Konnex profile: {profile_name}. "
+            f"Available: {', '.join(KONNEX_NETWORK_PROFILES.keys())}"
+        )
+
+    profile = KONNEX_NETWORK_PROFILES[profile_name]
+    return {
+        "endpoint": profile["endpoint"],
+        "fallback_endpoints": list(profile["fallback_endpoints"]),
+        "archive_endpoints": list(profile["archive_endpoints"]),
+    }
 
 DEFAULT_NETWORK = NETWORKS[0]
 DEFAULT_ENDPOINT = NETWORK_MAP[DEFAULT_NETWORK]

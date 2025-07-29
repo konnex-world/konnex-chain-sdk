@@ -467,6 +467,9 @@ def determine_chain_endpoint_and_network(
 
     if network is None:
         return None, None
+    if network in settings.KONNEX_NETWORK_PROFILES:
+        profile = settings.get_konnex_network_profile(network)
+        return network, profile["endpoint"]
     if network in settings.NETWORKS:
         return network, settings.NETWORK_MAP[network]
 

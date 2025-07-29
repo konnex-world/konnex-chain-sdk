@@ -75,6 +75,18 @@ Recent Konnex SDK extensions standardize task-scoped chain access using `(subnet
 
 All `*from_scope` variants accept a pre-built `TaskScope` object for safer composition in higher-level workflows.
 
+## Konnex Network Profiles
+
+The SDK now exposes named network profiles for Konnex environments:
+
+- `konnex-devnet`
+- `konnex-testnet`
+
+Profiles include endpoint defaults plus fallback/archive endpoint sets and are available from:
+
+- `bittensor.core.settings.get_konnex_network_profile(...)`
+- `SubtensorApi.get_konnex_network_profile(...)`
+
 ## Legacy Bittensor Notes
 
 Large parts of install and test instructions below still reference upstream Bittensor naming and tooling. Keep that in mind while Konnex-specific docs are expanded.
