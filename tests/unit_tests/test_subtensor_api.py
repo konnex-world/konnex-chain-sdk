@@ -148,6 +148,7 @@ def test_popw_shortcuts_exposed_on_subtensor_api():
     assert callable(api.submit_popw_vote)
     assert callable(api.popw_finalize_call)
     assert callable(api.query_popw_status_by_task)
+    assert callable(api.query_popw_normalized_status_by_task)
     assert callable(api.query_popw_votes_by_task)
 
 

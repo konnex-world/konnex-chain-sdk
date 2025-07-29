@@ -110,6 +110,9 @@ vote_call = api.popw_vote_call(
 )
 
 status = api.query_popw_status_by_task(subnet_id=1, task_id="task-42")
+normalized_status = api.query_popw_normalized_status_by_task(
+    subnet_id=1, task_id="task-42"
+)
 votes = api.query_popw_votes_by_task(subnet_id=1, task_id="task-42")
 ```
 

@@ -184,6 +184,7 @@ class SubtensorApi:
         self.submit_popw_vote = self.popw.submit_vote
         self.popw_finalize_call = self.popw.finalize_call
         self.query_popw_status_by_task = self.popw.query_status_by_task
+        self.query_popw_normalized_status_by_task = self.popw.query_normalized_status_by_task
         self.query_popw_votes_by_task = self.popw.query_votes_by_task
         self.settlement_snapshot = self.settlement.settlement_snapshot
         self.normalize_popw_status = self.settlement.normalize_popw_status

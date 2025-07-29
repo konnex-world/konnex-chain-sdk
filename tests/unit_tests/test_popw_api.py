@@ -87,3 +87,38 @@ def test_query_popw_status_and_votes_by_task(mocker):
     q2.assert_called_once_with(
         storage_name="PoPWVotesByTask", subnet_id=7, task_id="task-7", block=100
     )
+
+
+@pytest.mark.parametrize(
+    "value,decision,releasable",
+    [
+        ("pending", "pending", False),
+        ("approved", "approved", True),
+        ("rejected", "rejected", False),
+        ("finalized", "finalized", True),
+        ({"status": "finalized"}, "finalized", True),
+        ({"approved": False}, "rejected", False),
+        (None, "unknown", False),
+    ],
+)
+def test_popw_normalize_status_variants(value, decision, releasable):
+    api = SubtensorApi(network="latent-lite", mock=True)
+    normalized = api.popw.normalize_popw_status(value)
+    assert normalized.decision.value == decision
+    assert normalized.releasable is releasable
+
+
+def test_query_popw_normalized_status_by_task(mocker):
+    api = SubtensorApi(network="latent-lite", mock=True)
+    helper = api.popw
+    q = mocker.patch.object(helper, "query_status_by_task", return_value={"status": "approved"})
+
+    out = api.query_popw_normalized_status_by_task(9, "task-9", block=33)
+    assert out.decision.value == "approved"
+    assert out.releasable is True
+    q.assert_called_once_with(
+        subnet_id=9,
+        task_id="task-9",
+        block=33,
+        storage_name="PoPWStatusByTask",
+    )
