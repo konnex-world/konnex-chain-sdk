@@ -257,6 +257,16 @@ def test_argument_error_handling(monkeypatch, parser):
         ("localhost", "local", "localhost"),
         ("ws://127.0.0.1:9945", "local", "ws://127.0.0.1:9945"),
         ("ws://localhost:9945", "local", "ws://localhost:9945"),
+        (
+            "konnex-devnet",
+            "konnex-devnet",
+            settings.KONNEX_DEVNET_ENTRYPOINT,
+        ),
+        (
+            "konnex-testnet",
+            "konnex-testnet",
+            settings.KONNEX_TESTNET_ENTRYPOINT,
+        ),
         # Edge cases
         (None, None, None),
         ("unknown", "unknown", "unknown"),
@@ -271,6 +281,19 @@ def test_determine_chain_endpoint_and_network(
     # Assert
     assert result_network == expected_network
     assert result_endpoint == expected_endpoint
+
+
+def test_get_konnex_network_profile_returns_copy():
+    profile = settings.get_konnex_network_profile("konnex-devnet")
+    assert profile["endpoint"] == settings.KONNEX_DEVNET_ENTRYPOINT
+    profile["fallback_endpoints"].append("ws://mutated:9944")
+    fresh = settings.get_konnex_network_profile("konnex-devnet")
+    assert "ws://mutated:9944" not in fresh["fallback_endpoints"]
+
+
+def test_get_konnex_network_profile_unknown_raises():
+    with pytest.raises(KeyError):
+        settings.get_konnex_network_profile("konnex-unknown")
 
 
 @pytest.fixture

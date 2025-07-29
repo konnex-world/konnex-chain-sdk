@@ -1,5 +1,6 @@
 from typing import Optional, Union, TYPE_CHECKING
 
+from bittensor.core import settings
 from bittensor.core.async_subtensor import AsyncSubtensor as _AsyncSubtensor
 from bittensor.core.subtensor import Subtensor as _Subtensor
 from .chain import Chain as _Chain
@@ -126,11 +127,23 @@ class SubtensorApi:
         self.query_subtensor_for_task_from_scope = (
             self.queries.query_subtensor_for_task_from_scope
         )
+        self.query_map_subtensor_for_task = self.queries.query_map_subtensor_for_task
+        self.query_map_subtensor_for_task_from_scope = (
+            self.queries.query_map_subtensor_for_task_from_scope
+        )
+        self.query_module_for_task = self.queries.query_module_for_task
+        self.query_module_for_task_from_scope = (
+            self.queries.query_module_for_task_from_scope
+        )
         self.task_scope_params = self.queries.task_scope_params
         self.task_scope_call_params = self.queries.task_scope_call_params
         self.task_scope_params_from_scope = self.queries.task_scope_params_from_scope
         self.task_scope_call_params_from_scope = (
             self.queries.task_scope_call_params_from_scope
+        )
+        self.task_scope_params_with = self.queries.task_scope_params_with
+        self.task_scope_params_with_from_scope = (
+            self.queries.task_scope_params_with_from_scope
         )
         self.compose_call_for_task = self.extrinsics.compose_call_for_task
         self.compose_call_for_task_from_scope = (
@@ -145,10 +158,16 @@ class SubtensorApi:
         self.sign_and_send_extrinsic = self._subtensor.sign_and_send_extrinsic
         self.start_call = self._subtensor.start_call
         self.wait_for_block = self._subtensor.wait_for_block
+        self.konnex_network_profiles = settings.KONNEX_NETWORK_PROFILES
 
         # adds all Subtensor methods into main level of SubtensorApi class
         if legacy_methods:
             _add_classic_fields(self)
+
+    @staticmethod
+    def get_konnex_network_profile(profile_name: str) -> dict[str, object]:
+        """Return endpoint/fallback defaults for a named Konnex network profile."""
+        return settings.get_konnex_network_profile(profile_name)
 
     def _get_subtensor(self) -> Union["_Subtensor", "_AsyncSubtensor"]:
         """Returns the subtensor instance based on the provided config and subtensor type flag."""

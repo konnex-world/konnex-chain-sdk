@@ -48,6 +48,15 @@ def test_scope_params_from_scope_matches_scope_params():
     )
 
 
+def test_scope_extended_params_helpers():
+    api = SubtensorApi(network="latent-lite", mock=True)
+    scope = api.task_scopes.normalize(4, "job-4")
+    assert api.task_scopes.extend_params(4, "job-4", "x") == [4, "job-4", "x"]
+    assert api.task_scopes.extend_params_from_scope(scope, "x") == [4, "job-4", "x"]
+    assert api.task_scope_params_with(4, "job-4", "x") == [4, "job-4", "x"]
+    assert api.task_scope_params_with_from_scope(scope, "x") == [4, "job-4", "x"]
+
+
 def test_scope_call_params_from_scope_matches_scope_call_params():
     api = SubtensorApi(network="latent-lite", mock=True)
     scope = api.task_scopes.normalize(1, "t1")
@@ -205,6 +214,85 @@ def test_query_subtensor_for_task_from_scope_matches_scalar_form(mocker):
     r2 = api.query_subtensor_for_task("EscrowByTask", 5, "task-xyz", block=123)
 
     assert r1 == r2 == "ok"
+    assert spy.call_count == 2
+    assert spy.call_args_list[0] == spy.call_args_list[1]
+
+
+def test_query_map_subtensor_for_task_uses_canonical_params(mocker):
+    api = SubtensorApi(network="latent-lite", mock=True)
+    query_map_spy = mocker.patch.object(api._subtensor, "query_map_subtensor")
+    query_map_spy.return_value = {"ok": True}
+
+    result = api.query_map_subtensor_for_task(
+        storage_name="EscrowEventsByTask",
+        subnet_id=5,
+        task_id="task-xyz",
+        block=123,
+    )
+
+    assert result == {"ok": True}
+    query_map_spy.assert_called_once_with(
+        name="EscrowEventsByTask",
+        block=123,
+        params=[5, "task-xyz"],
+    )
+
+
+def test_query_map_subtensor_for_task_from_scope_matches_scalar_form(mocker):
+    api = SubtensorApi(network="latent-lite", mock=True)
+    spy = mocker.patch.object(api._subtensor, "query_map_subtensor")
+    spy.return_value = [("k", "v")]
+    scope = api.task_scopes.normalize(5, "task-xyz")
+
+    r1 = api.query_map_subtensor_for_task_from_scope(
+        "EscrowEventsByTask", scope, block=123
+    )
+    r2 = api.query_map_subtensor_for_task(
+        "EscrowEventsByTask", 5, "task-xyz", block=123
+    )
+
+    assert r1 == r2 == [("k", "v")]
+    assert spy.call_count == 2
+    assert spy.call_args_list[0] == spy.call_args_list[1]
+
+
+def test_query_module_for_task_uses_task_scoped_params_plus_extra(mocker):
+    api = SubtensorApi(network="latent-lite", mock=True)
+    query_module_spy = mocker.patch.object(api._subtensor, "query_module")
+    query_module_spy.return_value = {"ok": 1}
+
+    out = api.query_module_for_task(
+        "EscrowModule",
+        "Events",
+        7,
+        "job-77",
+        "status",
+        block=88,
+    )
+
+    assert out == {"ok": 1}
+    query_module_spy.assert_called_once_with(
+        module="EscrowModule",
+        name="Events",
+        block=88,
+        params=[7, "job-77", "status"],
+    )
+
+
+def test_query_module_for_task_from_scope_matches_scalar_form(mocker):
+    api = SubtensorApi(network="latent-lite", mock=True)
+    spy = mocker.patch.object(api._subtensor, "query_module")
+    spy.return_value = "ok"
+    scope = api.task_scopes.normalize(7, "job-77")
+
+    a = api.query_module_for_task_from_scope(
+        "EscrowModule", "Events", scope, "status", block=88
+    )
+    b = api.query_module_for_task(
+        "EscrowModule", "Events", 7, "job-77", "status", block=88
+    )
+
+    assert a == b == "ok"
     assert spy.call_count == 2
     assert spy.call_args_list[0] == spy.call_args_list[1]
 

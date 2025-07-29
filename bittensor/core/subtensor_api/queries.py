@@ -55,6 +55,16 @@ class Queries:
             scope, extra_params=extra_params
         )
 
+    def task_scope_params_with(self, subnet_id: int, task_id: str, *params: object) -> list[object]:
+        """Return canonical task params with extra positional query values appended."""
+        return self._task_scopes.extend_params(subnet_id, task_id, *params)
+
+    def task_scope_params_with_from_scope(
+        self, scope: TaskScope, *params: object
+    ) -> list[object]:
+        """Return canonical task params from `TaskScope` with extra positional values."""
+        return self._task_scopes.extend_params_from_scope(scope, *params)
+
     def query_subtensor_for_task(
         self,
         storage_name: str,
@@ -90,4 +100,68 @@ class Queries:
             name=storage_name,
             block=block,
             params=self.task_scope_params_from_scope(scope),
+        )
+
+    def query_map_subtensor_for_task(
+        self,
+        storage_name: str,
+        subnet_id: int,
+        task_id: str,
+        block: Optional[int] = None,
+    ) -> Any:
+        """
+        Query `SubtensorModule` map storage scoped by `(subnet_id, task_id)`.
+
+        Mirrors `query_subtensor_for_task` but uses `query_map_subtensor`.
+        """
+        return self.query_map_subtensor(
+            name=storage_name,
+            block=block,
+            params=self.task_scope_params(subnet_id=subnet_id, task_id=task_id),
+        )
+
+    def query_map_subtensor_for_task_from_scope(
+        self,
+        storage_name: str,
+        scope: TaskScope,
+        block: Optional[int] = None,
+    ) -> Any:
+        """Query `SubtensorModule` map storage using an existing `TaskScope`."""
+        return self.query_map_subtensor(
+            name=storage_name,
+            block=block,
+            params=self.task_scope_params_from_scope(scope),
+        )
+
+    def query_module_for_task(
+        self,
+        module_name: str,
+        storage_name: str,
+        subnet_id: int,
+        task_id: str,
+        *params: object,
+        block: Optional[int] = None,
+    ) -> Any:
+        """Query arbitrary module storage using task-scoped params + additional params."""
+        return self.query_module(
+            module=module_name,
+            name=storage_name,
+            block=block,
+            params=self.task_scope_params_with(subnet_id, task_id, *params),
+        )
+
+    def query_module_for_task_from_scope(
+        self,
+        module_name: str,
+        storage_name: str,
+        scope: TaskScope,
+        *params: object,
+        block: Optional[int] = None,
+    ) -> Any:
+        """Query arbitrary module storage using `TaskScope` + additional params."""
+        return self.query_module(
+            module=module_name,
+            name=storage_name,
+            block=block,
+            params=self.task_scope_params_with_from_scope(scope, *params),
         )
