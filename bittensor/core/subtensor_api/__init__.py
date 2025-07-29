@@ -175,6 +175,7 @@ class SubtensorApi:
         self.submit_create_escrow = self.escrow.submit_create_escrow
         self.deposit_escrow_call = self.escrow.deposit_escrow_call
         self.release_escrow_call = self.escrow.release_escrow_call
+        self.submit_release_escrow = self.escrow.submit_release_escrow
         self.cancel_escrow_call = self.escrow.cancel_escrow_call
         self.query_escrow_by_task = self.escrow.query_escrow_by_task
         self.query_escrow_events_by_task = self.escrow.query_escrow_events_by_task

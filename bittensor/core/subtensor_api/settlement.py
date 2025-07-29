@@ -114,14 +114,14 @@ class Settlement:
         """Submit escrow release only if PoPW currently evaluates to approved."""
         if not self.can_release_by_popw(subnet_id=subnet_id, task_id=task_id, block=block):
             raise RuntimeError("PoPW is not approved for this task; release is blocked")
-
-        return await self._escrow._extrinsics.sign_and_send_extrinsic_for_task(
-            call_module=module_name,
-            call_function=call_function,
+        return await self._escrow.submit_release_escrow(
             subnet_id=subnet_id,
             task_id=task_id,
+            escrow_id=escrow_id,
             wallet=wallet,
-            extra_params={"escrow_id": escrow_id, "verdict": verdict},
+            verdict=verdict,
+            module_name=module_name,
+            call_function=call_function,
             wait_for_inclusion=wait_for_inclusion,
             wait_for_finalization=wait_for_finalization,
         )

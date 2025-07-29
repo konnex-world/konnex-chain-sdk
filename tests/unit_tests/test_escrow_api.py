@@ -60,6 +60,28 @@ async def test_submit_create_escrow_dispatches_sign_send(mocker):
     assert send.call_args.kwargs["extra_params"]["amount_rao"] == 500
 
 
+@pytest.mark.asyncio
+async def test_submit_release_escrow_dispatches_sign_send(mocker):
+    api = SubtensorApi(network="latent-lite", mock=True)
+    helper = api.escrow
+    send = mocker.patch.object(
+        helper._extrinsics,
+        "sign_and_send_extrinsic_for_task",
+        return_value=(True, "released"),
+    )
+
+    out = await helper.submit_release_escrow(
+        subnet_id=2,
+        task_id="t-2",
+        escrow_id=9,
+        wallet=mocker.MagicMock(),
+        verdict="approved",
+    )
+    assert out == (True, "released")
+    send.assert_called_once()
+    assert send.call_args.kwargs["extra_params"]["escrow_id"] == 9
+
+
 def test_deposit_release_cancel_call_helpers(mocker):
     api = SubtensorApi(network="latent-lite", mock=True)
     compose = mocker.patch.object(api._subtensor.substrate, "compose_call")

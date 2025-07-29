@@ -64,15 +64,11 @@ async def test_guarded_submit_release_dispatches_when_approved(mocker):
     api = SubtensorApi(network="latent-lite", mock=True)
     helper = api.settlement
     mocker.patch.object(helper, "can_release_by_popw", return_value=True)
-    send = mocker.patch.object(
-        helper._escrow._extrinsics,
-        "sign_and_send_extrinsic_for_task",
-        return_value=(True, "ok"),
-    )
+    send = mocker.patch.object(helper._escrow, "submit_release_escrow", return_value=(True, "ok"))
 
     out = await helper.guarded_submit_release(
         subnet_id=1, task_id="task", escrow_id=10, wallet=mocker.MagicMock()
     )
     assert out == (True, "ok")
     send.assert_called_once()
-    assert send.call_args.kwargs["extra_params"]["escrow_id"] == 10
+    assert send.call_args.kwargs["escrow_id"] == 10
