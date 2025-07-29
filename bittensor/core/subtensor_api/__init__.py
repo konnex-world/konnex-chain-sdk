@@ -6,6 +6,7 @@ from bittensor.core.subtensor import Subtensor as _Subtensor
 from .chain import Chain as _Chain
 from .commitments import Commitments as _Commitments
 from .delegates import Delegates as _Delegates
+from .escrow import Escrow as _Escrow
 from .extrinsics import Extrinsics as _Extrinsics
 from .metagraphs import Metagraphs as _Metagraphs
 from .neurons import Neurons as _Neurons
@@ -97,6 +98,15 @@ class SubtensorApi:
         websocket_shutdown_timer: float = 5.0,
     ):
         self.network = network
+        self.konnex_profile_name: Optional[str] = None
+        if network in settings.KONNEX_NETWORK_PROFILES:
+            profile = settings.get_konnex_network_profile(network)
+            self.konnex_profile_name = network
+            if fallback_endpoints is None:
+                fallback_endpoints = profile["fallback_endpoints"]
+            if archive_endpoints is None:
+                archive_endpoints = profile["archive_endpoints"]
+
         self._fallback_endpoints = fallback_endpoints
         self._archive_endpoints = archive_endpoints
         self._retry_forever = retry_forever
@@ -159,6 +169,13 @@ class SubtensorApi:
         self.start_call = self._subtensor.start_call
         self.wait_for_block = self._subtensor.wait_for_block
         self.konnex_network_profiles = settings.KONNEX_NETWORK_PROFILES
+        self.create_escrow_call = self.escrow.create_escrow_call
+        self.submit_create_escrow = self.escrow.submit_create_escrow
+        self.deposit_escrow_call = self.escrow.deposit_escrow_call
+        self.release_escrow_call = self.escrow.release_escrow_call
+        self.cancel_escrow_call = self.escrow.cancel_escrow_call
+        self.query_escrow_by_task = self.escrow.query_escrow_by_task
+        self.query_escrow_events_by_task = self.escrow.query_escrow_events_by_task
 
         # adds all Subtensor methods into main level of SubtensorApi class
         if legacy_methods:
@@ -168,6 +185,38 @@ class SubtensorApi:
     def get_konnex_network_profile(profile_name: str) -> dict[str, object]:
         """Return endpoint/fallback defaults for a named Konnex network profile."""
         return settings.get_konnex_network_profile(profile_name)
+
+    def runtime_spec_version(self) -> Optional[int]:
+        """
+        Best-effort read of runtime spec version from current substrate connection.
+
+        Returns `None` if substrate does not expose runtime version metadata.
+        """
+        runtime_version = getattr(self.substrate, "runtime_version", None)
+        if runtime_version is None:
+            return None
+        if isinstance(runtime_version, dict):
+            return runtime_version.get("specVersion") or runtime_version.get(
+                "spec_version"
+            )
+        return getattr(runtime_version, "specVersion", None) or getattr(
+            runtime_version, "spec_version", None
+        )
+
+    def ensure_min_spec_version(self, min_spec_version: int) -> bool:
+        """
+        Validate that connected runtime meets minimum spec version.
+
+        Raises RuntimeError when runtime version is missing or below minimum.
+        """
+        current = self.runtime_spec_version()
+        if current is None:
+            raise RuntimeError("Runtime spec version is unavailable on current substrate")
+        if current < min_spec_version:
+            raise RuntimeError(
+                f"Runtime spec version {current} is below required {min_spec_version}"
+            )
+        return True
 
     def _get_subtensor(self) -> Union["_Subtensor", "_AsyncSubtensor"]:
         """Returns the subtensor instance based on the provided config and subtensor type flag."""
@@ -267,6 +316,11 @@ class SubtensorApi:
     def extrinsics(self):
         """Property to access extrinsics methods."""
         return _Extrinsics(self._subtensor)
+
+    @property
+    def escrow(self):
+        """Property to access task-scoped escrow helper methods."""
+        return _Escrow(self._subtensor)
 
     @property
     def metagraphs(self):

@@ -286,6 +286,7 @@ def test_determine_chain_endpoint_and_network(
 def test_get_konnex_network_profile_returns_copy():
     profile = settings.get_konnex_network_profile("konnex-devnet")
     assert profile["endpoint"] == settings.KONNEX_DEVNET_ENTRYPOINT
+    assert "min_spec_version" in profile
     profile["fallback_endpoints"].append("ws://mutated:9944")
     fresh = settings.get_konnex_network_profile("konnex-devnet")
     assert "ws://mutated:9944" not in fresh["fallback_endpoints"]

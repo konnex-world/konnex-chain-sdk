@@ -100,3 +100,43 @@ def test_failed_if_subtensor_has_new_method():
 
     with pytest.raises(AssertionError):
         test_properties_methods_comparable(other_class=SubtensorWithNewMethod)
+
+
+def test_konnex_profile_autoloads_fallback_and_archive_defaults():
+    api = SubtensorApi(network="konnex-devnet", mock=True)
+    profile = api.get_konnex_network_profile("konnex-devnet")
+    assert api.konnex_profile_name == "konnex-devnet"
+    assert api._fallback_endpoints == profile["fallback_endpoints"]
+    assert api._archive_endpoints == profile["archive_endpoints"]
+
+
+def test_konnex_profile_respects_explicit_overrides():
+    api = SubtensorApi(
+        network="konnex-testnet",
+        mock=True,
+        fallback_endpoints=["wss://custom-fallback:9944"],
+        archive_endpoints=["wss://custom-archive:9944"],
+    )
+    assert api.konnex_profile_name == "konnex-testnet"
+    assert api._fallback_endpoints == ["wss://custom-fallback:9944"]
+    assert api._archive_endpoints == ["wss://custom-archive:9944"]
+
+
+def test_runtime_spec_version_and_guard(monkeypatch):
+    api = SubtensorApi(network="latent-lite", mock=True)
+    monkeypatch.setattr(api.substrate, "runtime_version", {"specVersion": 1234})
+    assert api.runtime_spec_version() == 1234
+    assert api.ensure_min_spec_version(1200) is True
+    with pytest.raises(RuntimeError, match="below required"):
+        api.ensure_min_spec_version(2000)
+
+
+def test_escrow_shortcuts_exposed_on_subtensor_api():
+    api = SubtensorApi(network="latent-lite", mock=True)
+    assert callable(api.create_escrow_call)
+    assert callable(api.submit_create_escrow)
+    assert callable(api.deposit_escrow_call)
+    assert callable(api.release_escrow_call)
+    assert callable(api.cancel_escrow_call)
+    assert callable(api.query_escrow_by_task)
+    assert callable(api.query_escrow_events_by_task)

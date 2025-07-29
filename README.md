@@ -16,7 +16,7 @@
 - [Konnex Robotics Flow](#konnex-robotics-flow)
 - [Protocol and Product Docs](#protocol-and-product-docs)
 - [Release Notes](#release-notes)
-- [Install Bittensor SDK](#install-bittensor-sdk)
+- [Install Konnex Chain SDK](#install-konnex-chain-sdk)
 - [Upgrade](#upgrade)
 - [Install on macOS and Linux](#install-on-macos-and-linux)
   - [Install using a Bash command](#install-using-a-bash-command)
@@ -72,8 +72,29 @@ Recent Konnex SDK extensions standardize task-scoped chain access using `(subnet
 - `query_subtensor_for_task*` and `query_map_subtensor_for_task*` for Subtensor storage access.
 - `query_module_for_task*` for module-level task-scoped queries with extra params.
 - `compose_call_for_task*` and `sign_and_send_extrinsic_for_task*` for task-scoped extrinsics.
+- `Escrow` helper methods for task-scoped escrow compose/submit/query flows.
 
 All `*from_scope` variants accept a pre-built `TaskScope` object for safer composition in higher-level workflows.
+
+### Escrow Helper Preview
+
+```python
+api = bt.SubtensorApi(network="konnex-testnet")
+
+# compose extrinsic calls
+call = api.create_escrow_call(
+    subnet_id=1,
+    task_id="task-42",
+    payer="5F...",
+    payee="5G...",
+    amount_rao=1_000_000_000,
+    timeout_blocks=1200,
+)
+
+# query by task scope
+escrow_state = api.query_escrow_by_task(subnet_id=1, task_id="task-42")
+events = api.query_escrow_events_by_task(subnet_id=1, task_id="task-42")
+```
 
 ## Konnex Network Profiles
 
@@ -87,6 +108,16 @@ Profiles include endpoint defaults plus fallback/archive endpoint sets and are a
 - `bittensor.core.settings.get_konnex_network_profile(...)`
 - `SubtensorApi.get_konnex_network_profile(...)`
 
+`SubtensorApi` now auto-applies profile fallback/archive defaults when initialized with
+`network="konnex-devnet"` or `network="konnex-testnet"` (unless explicitly overridden).
+
+You can also enforce runtime compatibility in client code:
+
+```python
+api = bt.SubtensorApi(network="konnex-testnet")
+api.ensure_min_spec_version(1000)
+```
+
 ## Legacy Bittensor Notes
 
 Large parts of install and test instructions below still reference upstream Bittensor naming and tooling. Keep that in mind while Konnex-specific docs are expanded.
@@ -97,13 +128,13 @@ See [Bittensor SDK Release Notes](https://docs.bittensor.com/bittensor-rel-notes
 
 ---
 
-## Install Bittensor SDK
+## Install Konnex Chain SDK
 
-Before you can start developing, you must install Bittensor SDK and then create Bittensor wallet.
+Before you can start developing, install the SDK and then create a wallet.
 
 ## Upgrade
 
-If you already installed Bittensor SDK, make sure you upgrade to the latest version. Run the below command:
+If you already installed the SDK, upgrade to the latest version:
 
 ```bash
 python3 -m pip install --upgrade bittensor
@@ -113,7 +144,7 @@ python3 -m pip install --upgrade bittensor
 
 ## Install on macOS and Linux
 
-You can install Bittensor SDK on your local machine in either of the following ways. **Make sure you verify your installation after you install**:
+You can install Konnex Chain SDK on your local machine in either of the following ways. **Make sure you verify your installation after installation**:
 - [Install using a Bash command](#install-using-a-bash-command).
 - [Install using `pip3 install`](#install-using-pip3-install)
 - [Install from source](#install-from-source)

@@ -72,18 +72,13 @@ class TaskScopes:
         fields but must not reuse those names.
         """
         scope = self.normalize(subnet_id=subnet_id, task_id=task_id)
-        merged: dict[str, Any] = {
-            "subnet_id": scope.subnet_id,
-            "task_id": scope.task_id,
-        }
-        if extra_params:
-            overlap = set(extra_params) & {"subnet_id", "task_id"}
-            if overlap:
-                raise ValueError(
-                    "extra_params must not set subnet_id or task_id; pass them as arguments"
-                )
-            merged.update(extra_params)
-        return merged
+        return self._merge_scope_call_params(
+            scope=scope,
+            extra_params=extra_params,
+            overlap_error=(
+                "extra_params must not set subnet_id or task_id; pass them as arguments"
+            ),
+        )
 
     def scope_call_params_from_scope(
         self,
@@ -92,6 +87,20 @@ class TaskScopes:
         extra_params: Optional[dict[str, Any]] = None,
     ) -> dict[str, Any]:
         """Like `scope_call_params` but starts from an existing `TaskScope` instance."""
+        return self._merge_scope_call_params(
+            scope=scope,
+            extra_params=extra_params,
+            overlap_error=(
+                "extra_params must not set subnet_id or task_id; use TaskScope fields"
+            ),
+        )
+
+    @staticmethod
+    def _merge_scope_call_params(
+        scope: TaskScope,
+        extra_params: Optional[dict[str, Any]],
+        overlap_error: str,
+    ) -> dict[str, Any]:
         merged: dict[str, Any] = {
             "subnet_id": scope.subnet_id,
             "task_id": scope.task_id,
@@ -99,9 +108,7 @@ class TaskScopes:
         if extra_params:
             overlap = set(extra_params) & {"subnet_id", "task_id"}
             if overlap:
-                raise ValueError(
-                    "extra_params must not set subnet_id or task_id; use TaskScope fields"
-                )
+                raise ValueError(overlap_error)
             merged.update(extra_params)
         return merged
 
