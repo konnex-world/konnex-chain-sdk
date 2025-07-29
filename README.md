@@ -96,6 +96,23 @@ escrow_state = api.query_escrow_by_task(subnet_id=1, task_id="task-42")
 events = api.query_escrow_events_by_task(subnet_id=1, task_id="task-42")
 ```
 
+### PoPW Helper Preview
+
+```python
+api = bt.SubtensorApi(network="konnex-testnet")
+
+vote_call = api.popw_vote_call(
+    subnet_id=1,
+    task_id="task-42",
+    vote=True,
+    report_hash="0x...",
+    confidence_bps=9500,
+)
+
+status = api.query_popw_status_by_task(subnet_id=1, task_id="task-42")
+votes = api.query_popw_votes_by_task(subnet_id=1, task_id="task-42")
+```
+
 ## Konnex Network Profiles
 
 The SDK now exposes named network profiles for Konnex environments:

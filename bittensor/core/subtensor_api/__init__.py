@@ -10,6 +10,7 @@ from .escrow import Escrow as _Escrow
 from .extrinsics import Extrinsics as _Extrinsics
 from .metagraphs import Metagraphs as _Metagraphs
 from .neurons import Neurons as _Neurons
+from .popw import PoPW as _PoPW
 from .queries import Queries as _Queries
 from .staking import Staking as _Staking
 from .subnets import Subnets as _Subnets
@@ -176,6 +177,11 @@ class SubtensorApi:
         self.cancel_escrow_call = self.escrow.cancel_escrow_call
         self.query_escrow_by_task = self.escrow.query_escrow_by_task
         self.query_escrow_events_by_task = self.escrow.query_escrow_events_by_task
+        self.popw_vote_call = self.popw.vote_call
+        self.submit_popw_vote = self.popw.submit_vote
+        self.popw_finalize_call = self.popw.finalize_call
+        self.query_popw_status_by_task = self.popw.query_status_by_task
+        self.query_popw_votes_by_task = self.popw.query_votes_by_task
 
         # adds all Subtensor methods into main level of SubtensorApi class
         if legacy_methods:
@@ -321,6 +327,11 @@ class SubtensorApi:
     def escrow(self):
         """Property to access task-scoped escrow helper methods."""
         return _Escrow(self._subtensor)
+
+    @property
+    def popw(self):
+        """Property to access task-scoped PoPW helper methods."""
+        return _PoPW(self._subtensor)
 
     @property
     def metagraphs(self):

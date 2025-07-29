@@ -1,0 +1,130 @@
+from __future__ import annotations
+
+from typing import Any, Optional, TYPE_CHECKING, Union
+
+from bittensor.core.subtensor import Subtensor as _Subtensor
+from bittensor.core.async_subtensor import AsyncSubtensor as _AsyncSubtensor
+
+from .extrinsics import Extrinsics as _Extrinsics
+from .queries import Queries as _Queries
+
+if TYPE_CHECKING:
+    from bittensor_wallet import Wallet
+
+
+class PoPW:
+    """Task-scoped PoPW helper facade for Konnex runtime modules."""
+
+    def __init__(self, subtensor: Union["_Subtensor", "_AsyncSubtensor"]):
+        self._queries = _Queries(subtensor)
+        self._extrinsics = _Extrinsics(subtensor)
+
+    @staticmethod
+    def _drop_none(values: dict[str, Any]) -> dict[str, Any]:
+        return {k: v for k, v in values.items() if v is not None}
+
+    def vote_call(
+        self,
+        subnet_id: int,
+        task_id: str,
+        vote: bool,
+        report_hash: Optional[str] = None,
+        confidence_bps: Optional[int] = None,
+        module_name: str = "PoPWModule",
+        call_function: str = "vote_popw",
+    ) -> Any:
+        """Compose a PoPW vote call scoped by `(subnet_id, task_id)`."""
+        params = self._drop_none(
+            {
+                "vote": vote,
+                "report_hash": report_hash,
+                "confidence_bps": confidence_bps,
+            }
+        )
+        return self._extrinsics.compose_call_for_task(
+            call_module=module_name,
+            call_function=call_function,
+            subnet_id=subnet_id,
+            task_id=task_id,
+            extra_params=params,
+        )
+
+    async def submit_vote(
+        self,
+        subnet_id: int,
+        task_id: str,
+        wallet: "Wallet",
+        vote: bool,
+        report_hash: Optional[str] = None,
+        confidence_bps: Optional[int] = None,
+        module_name: str = "PoPWModule",
+        call_function: str = "vote_popw",
+        *,
+        wait_for_inclusion: bool = True,
+        wait_for_finalization: bool = False,
+    ) -> tuple[bool, str]:
+        """Compose + submit a PoPW vote call."""
+        params = self._drop_none(
+            {
+                "vote": vote,
+                "report_hash": report_hash,
+                "confidence_bps": confidence_bps,
+            }
+        )
+        return await self._extrinsics.sign_and_send_extrinsic_for_task(
+            call_module=module_name,
+            call_function=call_function,
+            subnet_id=subnet_id,
+            task_id=task_id,
+            wallet=wallet,
+            extra_params=params,
+            wait_for_inclusion=wait_for_inclusion,
+            wait_for_finalization=wait_for_finalization,
+        )
+
+    def finalize_call(
+        self,
+        subnet_id: int,
+        task_id: str,
+        outcome: Optional[str] = None,
+        module_name: str = "PoPWModule",
+        call_function: str = "finalize_popw",
+    ) -> Any:
+        """Compose a PoPW finalize call."""
+        return self._extrinsics.compose_call_for_task(
+            call_module=module_name,
+            call_function=call_function,
+            subnet_id=subnet_id,
+            task_id=task_id,
+            extra_params=self._drop_none({"outcome": outcome}),
+        )
+
+    def query_status_by_task(
+        self,
+        subnet_id: int,
+        task_id: str,
+        block: Optional[int] = None,
+        storage_name: str = "PoPWStatusByTask",
+    ) -> Any:
+        """Query PoPW status by task key."""
+        return self._queries.query_subtensor_for_task(
+            storage_name=storage_name,
+            subnet_id=subnet_id,
+            task_id=task_id,
+            block=block,
+        )
+
+    def query_votes_by_task(
+        self,
+        subnet_id: int,
+        task_id: str,
+        block: Optional[int] = None,
+        storage_name: str = "PoPWVotesByTask",
+    ) -> Any:
+        """Query PoPW votes map by task key."""
+        return self._queries.query_map_subtensor_for_task(
+            storage_name=storage_name,
+            subnet_id=subnet_id,
+            task_id=task_id,
+            block=block,
+        )
