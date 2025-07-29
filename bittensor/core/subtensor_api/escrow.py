@@ -126,6 +126,31 @@ class Escrow:
             extra_params=self._drop_none({"escrow_id": escrow_id, "verdict": verdict}),
         )
 
+    async def submit_release_escrow(
+        self,
+        subnet_id: int,
+        task_id: str,
+        escrow_id: int,
+        wallet: "Wallet",
+        verdict: Optional[str] = "approved",
+        module_name: str = "EscrowModule",
+        call_function: str = "release_escrow",
+        *,
+        wait_for_inclusion: bool = True,
+        wait_for_finalization: bool = False,
+    ) -> tuple[bool, str]:
+        """Compose + submit escrow release call."""
+        return await self._extrinsics.sign_and_send_extrinsic_for_task(
+            call_module=module_name,
+            call_function=call_function,
+            subnet_id=subnet_id,
+            task_id=task_id,
+            wallet=wallet,
+            extra_params=self._drop_none({"escrow_id": escrow_id, "verdict": verdict}),
+            wait_for_inclusion=wait_for_inclusion,
+            wait_for_finalization=wait_for_finalization,
+        )
+
     def cancel_escrow_call(
         self,
         subnet_id: int,

@@ -140,3 +140,22 @@ def test_escrow_shortcuts_exposed_on_subtensor_api():
     assert callable(api.cancel_escrow_call)
     assert callable(api.query_escrow_by_task)
     assert callable(api.query_escrow_events_by_task)
+
+
+def test_popw_shortcuts_exposed_on_subtensor_api():
+    api = SubtensorApi(network="latent-lite", mock=True)
+    assert callable(api.popw_vote_call)
+    assert callable(api.submit_popw_vote)
+    assert callable(api.popw_finalize_call)
+    assert callable(api.query_popw_status_by_task)
+    assert callable(api.query_popw_votes_by_task)
+
+
+def test_settlement_shortcuts_exposed_on_subtensor_api():
+    api = SubtensorApi(network="latent-lite", mock=True)
+    assert callable(api.settlement_snapshot)
+    assert callable(api.normalize_popw_status)
+    assert callable(api.can_release_by_popw)
+    assert callable(api.guarded_release_call)
+    assert callable(api.guarded_submit_release)
+    assert callable(api.map_runtime_error)

@@ -1,6 +1,11 @@
 import pytest
 
 from bittensor.core.subtensor_api import SubtensorApi
+from bittensor.core.subtensor_api.runtime_errors import (
+    EscrowStateError,
+    KonnexRuntimeError,
+    PopwNotApprovedError,
+)
 from bittensor.utils import TaskScope
 
 
@@ -182,6 +187,69 @@ async def test_sign_and_send_extrinsic_for_task_awaits_async_compose_and_send(mo
         wallet=mocker.MagicMock(),
     )
     assert out == (False, "chain msg")
+
+
+@pytest.mark.asyncio
+async def test_sign_and_send_extrinsic_for_task_raise_error_maps_popw(mocker):
+    api = SubtensorApi(network="latent-lite", mock=True)
+    mocker.patch.object(api._subtensor.substrate, "compose_call", return_value="call_obj")
+    mocker.patch.object(
+        api._subtensor,
+        "sign_and_send_extrinsic",
+        return_value=(False, "PoPWModule.NotApproved"),
+    )
+
+    with pytest.raises(PopwNotApprovedError, match="PoPWModule.NotApproved"):
+        await api.sign_and_send_extrinsic_for_task(
+            call_module="SubtensorModule",
+            call_function="task_action",
+            subnet_id=1,
+            task_id="job",
+            wallet=mocker.MagicMock(),
+            raise_error=True,
+        )
+
+
+@pytest.mark.asyncio
+async def test_sign_and_send_extrinsic_for_task_raise_error_maps_escrow(mocker):
+    api = SubtensorApi(network="latent-lite", mock=True)
+    mocker.patch.object(api._subtensor.substrate, "compose_call", return_value="call_obj")
+    mocker.patch.object(
+        api._subtensor,
+        "sign_and_send_extrinsic",
+        return_value=(False, "EscrowModule.EscrowNotFound"),
+    )
+
+    with pytest.raises(EscrowStateError, match="EscrowModule.EscrowNotFound"):
+        await api.sign_and_send_extrinsic_for_task(
+            call_module="SubtensorModule",
+            call_function="task_action",
+            subnet_id=1,
+            task_id="job",
+            wallet=mocker.MagicMock(),
+            raise_error=True,
+        )
+
+
+@pytest.mark.asyncio
+async def test_sign_and_send_extrinsic_for_task_raise_error_maps_unknown(mocker):
+    api = SubtensorApi(network="latent-lite", mock=True)
+    mocker.patch.object(api._subtensor.substrate, "compose_call", return_value="call_obj")
+    mocker.patch.object(
+        api._subtensor,
+        "sign_and_send_extrinsic",
+        return_value=(False, "SomeModule.OtherFailure"),
+    )
+
+    with pytest.raises(KonnexRuntimeError, match="SomeModule.OtherFailure"):
+        await api.sign_and_send_extrinsic_for_task(
+            call_module="SubtensorModule",
+            call_function="task_action",
+            subnet_id=1,
+            task_id="job",
+            wallet=mocker.MagicMock(),
+            raise_error=True,
+        )
 
 
 def test_query_subtensor_for_task_uses_canonical_params(mocker):

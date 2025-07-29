@@ -96,6 +96,43 @@ escrow_state = api.query_escrow_by_task(subnet_id=1, task_id="task-42")
 events = api.query_escrow_events_by_task(subnet_id=1, task_id="task-42")
 ```
 
+### PoPW Helper Preview
+
+```python
+api = bt.SubtensorApi(network="konnex-testnet")
+
+vote_call = api.popw_vote_call(
+    subnet_id=1,
+    task_id="task-42",
+    vote=True,
+    report_hash="0x...",
+    confidence_bps=9500,
+)
+
+status = api.query_popw_status_by_task(subnet_id=1, task_id="task-42")
+votes = api.query_popw_votes_by_task(subnet_id=1, task_id="task-42")
+```
+
+### Settlement Orchestration Preview
+
+```python
+api = bt.SubtensorApi(network="konnex-testnet")
+snapshot = api.settlement_snapshot(subnet_id=1, task_id="task-42")
+
+if api.can_release_by_popw(subnet_id=1, task_id="task-42"):
+    release_call = api.guarded_release_call(
+        subnet_id=1,
+        task_id="task-42",
+        escrow_id=123,
+    )
+
+normalized = api.normalize_popw_status(snapshot["popw_status"])
+print(normalized.decision.value, normalized.releasable)
+```
+
+For extrinsic failures, task-scoped submit helpers can now map common runtime
+errors into typed SDK exceptions when called with `raise_error=True`.
+
 ## Konnex Network Profiles
 
 The SDK now exposes named network profiles for Konnex environments:

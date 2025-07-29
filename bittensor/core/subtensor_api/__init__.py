@@ -10,7 +10,10 @@ from .escrow import Escrow as _Escrow
 from .extrinsics import Extrinsics as _Extrinsics
 from .metagraphs import Metagraphs as _Metagraphs
 from .neurons import Neurons as _Neurons
+from .popw import PoPW as _PoPW
 from .queries import Queries as _Queries
+from .runtime_errors import map_runtime_error as _map_runtime_error
+from .settlement import Settlement as _Settlement
 from .staking import Staking as _Staking
 from .subnets import Subnets as _Subnets
 from .task_scopes import TaskScopes as _TaskScopes
@@ -173,9 +176,21 @@ class SubtensorApi:
         self.submit_create_escrow = self.escrow.submit_create_escrow
         self.deposit_escrow_call = self.escrow.deposit_escrow_call
         self.release_escrow_call = self.escrow.release_escrow_call
+        self.submit_release_escrow = self.escrow.submit_release_escrow
         self.cancel_escrow_call = self.escrow.cancel_escrow_call
         self.query_escrow_by_task = self.escrow.query_escrow_by_task
         self.query_escrow_events_by_task = self.escrow.query_escrow_events_by_task
+        self.popw_vote_call = self.popw.vote_call
+        self.submit_popw_vote = self.popw.submit_vote
+        self.popw_finalize_call = self.popw.finalize_call
+        self.query_popw_status_by_task = self.popw.query_status_by_task
+        self.query_popw_votes_by_task = self.popw.query_votes_by_task
+        self.settlement_snapshot = self.settlement.settlement_snapshot
+        self.normalize_popw_status = self.settlement.normalize_popw_status
+        self.can_release_by_popw = self.settlement.can_release_by_popw
+        self.guarded_release_call = self.settlement.guarded_release_call
+        self.guarded_submit_release = self.settlement.guarded_submit_release
+        self.map_runtime_error = _map_runtime_error
 
         # adds all Subtensor methods into main level of SubtensorApi class
         if legacy_methods:
@@ -321,6 +336,16 @@ class SubtensorApi:
     def escrow(self):
         """Property to access task-scoped escrow helper methods."""
         return _Escrow(self._subtensor)
+
+    @property
+    def popw(self):
+        """Property to access task-scoped PoPW helper methods."""
+        return _PoPW(self._subtensor)
+
+    @property
+    def settlement(self):
+        """Property to access high-level settlement orchestration helpers."""
+        return _Settlement(self._subtensor)
 
     @property
     def metagraphs(self):

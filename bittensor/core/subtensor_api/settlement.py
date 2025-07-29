@@ -1,0 +1,188 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+from enum import Enum
+from typing import Any, Optional, TYPE_CHECKING, Union
+
+from bittensor.core.subtensor import Subtensor as _Subtensor
+from bittensor.core.async_subtensor import AsyncSubtensor as _AsyncSubtensor
+
+from .escrow import Escrow as _Escrow
+from .popw import PoPW as _PoPW
+
+if TYPE_CHECKING:
+    from bittensor_wallet import Wallet
+
+
+class Settlement:
+    """High-level escrow + PoPW orchestration helpers for task settlement."""
+
+    def __init__(self, subtensor: Union["_Subtensor", "_AsyncSubtensor"]):
+        self._escrow = _Escrow(subtensor)
+        self._popw = _PoPW(subtensor)
+
+    def settlement_snapshot(
+        self,
+        subnet_id: int,
+        task_id: str,
+        block: Optional[int] = None,
+    ) -> dict[str, Any]:
+        """Read escrow + PoPW state for a `(subnet_id, task_id)` pair."""
+        return {
+            "subnet_id": subnet_id,
+            "task_id": task_id,
+            "escrow": self._escrow.query_escrow_by_task(
+                subnet_id=subnet_id, task_id=task_id, block=block
+            ),
+            "popw_status": self._popw.query_status_by_task(
+                subnet_id=subnet_id, task_id=task_id, block=block
+            ),
+            "popw_votes": self._popw.query_votes_by_task(
+                subnet_id=subnet_id, task_id=task_id, block=block
+            ),
+        }
+
+    class PopwDecision(str, Enum):
+        PENDING = "pending"
+        APPROVED = "approved"
+        REJECTED = "rejected"
+        FINALIZED = "finalized"
+        UNKNOWN = "unknown"
+
+    @dataclass(frozen=True)
+    class NormalizedPopwStatus:
+        decision: "Settlement.PopwDecision"
+        raw: Any
+        reason: Optional[str] = None
+
+        @property
+        def releasable(self) -> bool:
+            return self.decision in {
+                Settlement.PopwDecision.APPROVED,
+                Settlement.PopwDecision.FINALIZED,
+            }
+
+    @staticmethod
+    def normalize_popw_status(popw_status: Any) -> "Settlement.NormalizedPopwStatus":
+        """Normalize raw PoPW status into deterministic decision enum."""
+        if popw_status is None:
+            return Settlement.NormalizedPopwStatus(
+                decision=Settlement.PopwDecision.UNKNOWN,
+                raw=popw_status,
+                reason="missing status",
+            )
+        if isinstance(popw_status, bool):
+            return Settlement.NormalizedPopwStatus(
+                decision=(
+                    Settlement.PopwDecision.APPROVED
+                    if popw_status
+                    else Settlement.PopwDecision.REJECTED
+                ),
+                raw=popw_status,
+                reason="bool fallback",
+            )
+        if isinstance(popw_status, str):
+            normalized = popw_status.strip().lower()
+            mapping = {
+                "pending": Settlement.PopwDecision.PENDING,
+                "approved": Settlement.PopwDecision.APPROVED,
+                "rejected": Settlement.PopwDecision.REJECTED,
+                "finalized": Settlement.PopwDecision.FINALIZED,
+                "success": Settlement.PopwDecision.FINALIZED,
+            }
+            decision = mapping.get(normalized, Settlement.PopwDecision.UNKNOWN)
+            return Settlement.NormalizedPopwStatus(
+                decision=decision,
+                raw=popw_status,
+                reason=None if decision != Settlement.PopwDecision.UNKNOWN else "unknown string",
+            )
+        if isinstance(popw_status, dict):
+            if isinstance(popw_status.get("approved"), bool):
+                return Settlement.NormalizedPopwStatus(
+                    decision=(
+                        Settlement.PopwDecision.APPROVED
+                        if popw_status["approved"]
+                        else Settlement.PopwDecision.REJECTED
+                    ),
+                    raw=popw_status,
+                )
+            for key in ("outcome", "status", "state"):
+                value = popw_status.get(key)
+                if isinstance(value, str):
+                    return Settlement.normalize_popw_status(value)
+            return Settlement.NormalizedPopwStatus(
+                decision=Settlement.PopwDecision.UNKNOWN,
+                raw=popw_status,
+                reason="dict without recognized keys",
+            )
+        return Settlement.NormalizedPopwStatus(
+            decision=Settlement.PopwDecision.UNKNOWN,
+            raw=popw_status,
+            reason="unsupported type",
+        )
+
+    @staticmethod
+    def popw_is_approved(popw_status: Any) -> bool:
+        """
+        Backward-compatible release check based on normalized PoPW decision.
+        """
+        return Settlement.normalize_popw_status(popw_status).releasable
+
+    def can_release_by_popw(
+        self,
+        subnet_id: int,
+        task_id: str,
+        block: Optional[int] = None,
+    ) -> bool:
+        """Return True when PoPW status indicates escrow is releasable."""
+        status = self._popw.query_status_by_task(
+            subnet_id=subnet_id, task_id=task_id, block=block
+        )
+        return self.popw_is_approved(status)
+
+    def guarded_release_call(
+        self,
+        subnet_id: int,
+        task_id: str,
+        escrow_id: int,
+        verdict: Optional[str] = "approved",
+        block: Optional[int] = None,
+    ) -> Any:
+        """Compose release call only when current PoPW status appears approved."""
+        if not self.can_release_by_popw(subnet_id=subnet_id, task_id=task_id, block=block):
+            raise RuntimeError("PoPW is not approved for this task; release is blocked")
+        return self._escrow.release_escrow_call(
+            subnet_id=subnet_id,
+            task_id=task_id,
+            escrow_id=escrow_id,
+            verdict=verdict,
+        )
+
+    async def guarded_submit_release(
+        self,
+        subnet_id: int,
+        task_id: str,
+        escrow_id: int,
+        wallet: "Wallet",
+        verdict: Optional[str] = "approved",
+        block: Optional[int] = None,
+        module_name: str = "EscrowModule",
+        call_function: str = "release_escrow",
+        *,
+        wait_for_inclusion: bool = True,
+        wait_for_finalization: bool = False,
+    ) -> tuple[bool, str]:
+        """Submit escrow release only if PoPW currently evaluates to approved."""
+        if not self.can_release_by_popw(subnet_id=subnet_id, task_id=task_id, block=block):
+            raise RuntimeError("PoPW is not approved for this task; release is blocked")
+        return await self._escrow.submit_release_escrow(
+            subnet_id=subnet_id,
+            task_id=task_id,
+            escrow_id=escrow_id,
+            wallet=wallet,
+            verdict=verdict,
+            module_name=module_name,
+            call_function=call_function,
+            wait_for_inclusion=wait_for_inclusion,
+            wait_for_finalization=wait_for_finalization,
+        )
