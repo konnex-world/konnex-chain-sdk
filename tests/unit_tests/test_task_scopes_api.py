@@ -30,6 +30,53 @@ def test_queries_task_scope_params():
     assert api.queries.task_scope_params(11, "job-11") == [11, "job-11"]
 
 
+def test_subtensor_api_task_scope_param_shortcuts_match_queries():
+    api = SubtensorApi(network="latent-lite", mock=True)
+    assert api.task_scope_params(2, "x") == api.queries.task_scope_params(2, "x")
+    assert api.task_scope_call_params(2, "x", extra_params={"a": 1}) == (
+        api.queries.task_scope_call_params(2, "x", extra_params={"a": 1})
+    )
+
+
+def test_scope_params_from_scope_matches_scope_params():
+    api = SubtensorApi(network="latent-lite", mock=True)
+    scope = api.task_scopes.normalize(8, "job-8")
+    assert api.task_scopes.scope_params_from_scope(scope) == [8, "job-8"]
+    assert api.task_scope_params_from_scope(scope) == api.task_scope_params(8, "job-8")
+    assert api.queries.task_scope_params_from_scope(scope) == api.queries.task_scope_params(
+        8, "job-8"
+    )
+
+
+def test_scope_call_params_from_scope_matches_scope_call_params():
+    api = SubtensorApi(network="latent-lite", mock=True)
+    scope = api.task_scopes.normalize(1, "t1")
+    extra = {"flag": True}
+    assert api.task_scopes.scope_call_params_from_scope(scope, extra_params=extra) == (
+        api.task_scopes.scope_call_params(1, "t1", extra_params=extra)
+    )
+    assert api.task_scope_call_params_from_scope(scope, extra_params=extra) == (
+        api.queries.task_scope_call_params_from_scope(scope, extra_params=extra)
+    )
+
+
+def test_scope_call_params_from_scope_rejects_subnet_in_extra():
+    api = SubtensorApi(network="latent-lite", mock=True)
+    scope = api.task_scopes.normalize(1, "t1")
+    with pytest.raises(ValueError, match="extra_params"):
+        api.task_scopes.scope_call_params_from_scope(
+            scope, extra_params={"subnet_id": 2}
+        )
+
+
+def test_task_scope_shortcuts_reject_invalid_task_id():
+    api = SubtensorApi(network="latent-lite", mock=True)
+    with pytest.raises(ValueError):
+        api.task_scope_params(0, "")
+    with pytest.raises(ValueError):
+        api.task_scope_call_params(0, "bad id")
+
+
 def test_queries_task_scope_call_params_matches_task_scopes():
     api = SubtensorApi(network="latent-lite", mock=True)
     d = api.queries.task_scope_call_params(9, "q-9", extra_params={"proof": b"\x01"})
@@ -146,4 +193,91 @@ def test_query_subtensor_for_task_uses_canonical_params(mocker):
         block=123,
         params=[5, "task-xyz"],
     )
+
+
+def test_query_subtensor_for_task_from_scope_matches_scalar_form(mocker):
+    api = SubtensorApi(network="latent-lite", mock=True)
+    spy = mocker.patch.object(api._subtensor, "query_subtensor")
+    spy.return_value = "ok"
+    scope = api.task_scopes.normalize(5, "task-xyz")
+
+    r1 = api.query_subtensor_for_task_from_scope("EscrowByTask", scope, block=123)
+    r2 = api.query_subtensor_for_task("EscrowByTask", 5, "task-xyz", block=123)
+
+    assert r1 == r2 == "ok"
+    assert spy.call_count == 2
+    assert spy.call_args_list[0] == spy.call_args_list[1]
+
+
+def test_compose_call_for_task_from_scope_matches_scalar(mocker):
+    api = SubtensorApi(network="latent-lite", mock=True)
+    compose = mocker.patch.object(api._subtensor.substrate, "compose_call")
+    compose.return_value = "call"
+    scope = api.task_scopes.normalize(3, "proof-9")
+
+    a = api.compose_call_for_task_from_scope(
+        "SubtensorModule",
+        "submit_proof",
+        scope,
+        extra_params={"cid": "x"},
+    )
+    b = api.compose_call_for_task(
+        "SubtensorModule",
+        "submit_proof",
+        subnet_id=3,
+        task_id="proof-9",
+        extra_params={"cid": "x"},
+    )
+
+    assert a == b == "call"
+    assert compose.call_count == 2
+    assert compose.call_args_list[0] == compose.call_args_list[1]
+
+
+@pytest.mark.asyncio
+async def test_sign_and_send_extrinsic_for_task_from_scope_sync(mocker):
+    api = SubtensorApi(network="latent-lite", mock=True)
+    mocker.patch.object(
+        api._subtensor.substrate, "compose_call", return_value="call_obj"
+    )
+    send = mocker.patch.object(
+        api._subtensor, "sign_and_send_extrinsic", return_value=(True, "sent")
+    )
+    scope = api.task_scopes.normalize(8, "task-8")
+    wallet = mocker.MagicMock()
+
+    out = await api.sign_and_send_extrinsic_for_task_from_scope(
+        "SubtensorModule",
+        "escrow_action",
+        scope,
+        wallet,
+        extra_params={"amount": 1},
+        wait_for_inclusion=False,
+    )
+
+    assert out == (True, "sent")
+    send.assert_called_once()
+    assert send.call_args.kwargs["call"] == "call_obj"
+    assert send.call_args.kwargs["wallet"] is wallet
+
+
+@pytest.mark.asyncio
+async def test_sign_and_send_extrinsic_for_task_from_scope_async_subtensor(mocker):
+    api = SubtensorApi(network="latent-lite", mock=True, async_subtensor=True)
+    scope = api.task_scopes.normalize(2, "x")
+
+    async def fake_compose(**kwargs):
+        assert kwargs["call_params"]["subnet_id"] == 2
+        return "c"
+
+    async def fake_send(**kwargs):
+        return (True, "ok")
+
+    mocker.patch.object(api._subtensor.substrate, "compose_call", side_effect=fake_compose)
+    mocker.patch.object(api._subtensor, "sign_and_send_extrinsic", side_effect=fake_send)
+
+    r = await api.sign_and_send_extrinsic_for_task_from_scope(
+        "SubtensorModule", "f", scope, mocker.MagicMock()
+    )
+    assert r == (True, "ok")
 
