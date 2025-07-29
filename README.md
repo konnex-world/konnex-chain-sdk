@@ -113,6 +113,20 @@ status = api.query_popw_status_by_task(subnet_id=1, task_id="task-42")
 votes = api.query_popw_votes_by_task(subnet_id=1, task_id="task-42")
 ```
 
+### Settlement Orchestration Preview
+
+```python
+api = bt.SubtensorApi(network="konnex-testnet")
+snapshot = api.settlement_snapshot(subnet_id=1, task_id="task-42")
+
+if api.can_release_by_popw(subnet_id=1, task_id="task-42"):
+    release_call = api.guarded_release_call(
+        subnet_id=1,
+        task_id="task-42",
+        escrow_id=123,
+    )
+```
+
 ## Konnex Network Profiles
 
 The SDK now exposes named network profiles for Konnex environments:

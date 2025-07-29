@@ -12,6 +12,7 @@ from .metagraphs import Metagraphs as _Metagraphs
 from .neurons import Neurons as _Neurons
 from .popw import PoPW as _PoPW
 from .queries import Queries as _Queries
+from .settlement import Settlement as _Settlement
 from .staking import Staking as _Staking
 from .subnets import Subnets as _Subnets
 from .task_scopes import TaskScopes as _TaskScopes
@@ -182,6 +183,10 @@ class SubtensorApi:
         self.popw_finalize_call = self.popw.finalize_call
         self.query_popw_status_by_task = self.popw.query_status_by_task
         self.query_popw_votes_by_task = self.popw.query_votes_by_task
+        self.settlement_snapshot = self.settlement.settlement_snapshot
+        self.can_release_by_popw = self.settlement.can_release_by_popw
+        self.guarded_release_call = self.settlement.guarded_release_call
+        self.guarded_submit_release = self.settlement.guarded_submit_release
 
         # adds all Subtensor methods into main level of SubtensorApi class
         if legacy_methods:
@@ -332,6 +337,11 @@ class SubtensorApi:
     def popw(self):
         """Property to access task-scoped PoPW helper methods."""
         return _PoPW(self._subtensor)
+
+    @property
+    def settlement(self):
+        """Property to access high-level settlement orchestration helpers."""
+        return _Settlement(self._subtensor)
 
     @property
     def metagraphs(self):
