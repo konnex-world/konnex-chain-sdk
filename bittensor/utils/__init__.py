@@ -2,6 +2,7 @@ import ast
 import decimal
 import hashlib
 from collections import namedtuple
+from dataclasses import dataclass
 from typing import Any, Literal, Union, Optional, TYPE_CHECKING
 from urllib.parse import urlparse
 
@@ -41,6 +42,51 @@ U16_MAX = 65535
 U64_MAX = 18446744073709551615
 
 UnlockStatus = namedtuple("UnlockStatus", ["success", "message"])
+
+
+def validate_subnet_id(subnet_id: int) -> int:
+    """Validate subnet identifier for subnet-aware workflows."""
+    if isinstance(subnet_id, bool) or not isinstance(subnet_id, int):
+        raise TypeError("subnet_id must be an integer")
+    if subnet_id < 0:
+        raise ValueError("subnet_id must be >= 0")
+    return subnet_id
+
+
+def validate_task_id(task_id: str) -> str:
+    """Validate task identifier used for escrow/PoPW correlation."""
+    if not isinstance(task_id, str):
+        raise TypeError("task_id must be a string")
+    if not task_id:
+        raise ValueError("task_id must not be empty")
+    if task_id.strip() != task_id:
+        raise ValueError("task_id must not contain leading/trailing whitespace")
+    if any(ch.isspace() for ch in task_id):
+        raise ValueError("task_id must not contain whitespace")
+    if len(task_id) > 128:
+        raise ValueError("task_id length must be <= 128")
+    return task_id
+
+
+@dataclass(frozen=True)
+class TaskScope:
+    """
+    Immutable key for subnet-aware task operations.
+
+    Keeps escrow/PoPW references explicitly scoped by subnet.
+    """
+
+    subnet_id: int
+    task_id: str
+
+    def __post_init__(self):
+        object.__setattr__(self, "subnet_id", validate_subnet_id(self.subnet_id))
+        object.__setattr__(self, "task_id", validate_task_id(self.task_id))
+
+    @property
+    def key(self) -> tuple[int, str]:
+        """Stable key for dict/index lookups."""
+        return self.subnet_id, self.task_id
 
 
 class Certificate(str):

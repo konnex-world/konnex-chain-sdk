@@ -1,12 +1,21 @@
-from typing import Union
+import inspect
+from typing import Any, Optional, TYPE_CHECKING, Union
+
 from bittensor.core.subtensor import Subtensor as _Subtensor
 from bittensor.core.async_subtensor import AsyncSubtensor as _AsyncSubtensor
+
+from .task_scopes import TaskScopes as _TaskScopes
+
+if TYPE_CHECKING:
+    from bittensor_wallet import Wallet
 
 
 class Extrinsics:
     """Class for managing extrinsic operations."""
 
     def __init__(self, subtensor: Union["_Subtensor", "_AsyncSubtensor"]):
+        self._subtensor = subtensor
+        self._task_scopes = _TaskScopes(subtensor)
         self.add_stake = subtensor.add_stake
         self.add_stake_multiple = subtensor.add_stake_multiple
         self.burned_register = subtensor.burned_register
@@ -30,3 +39,77 @@ class Extrinsics:
         self.transfer_stake = subtensor.transfer_stake
         self.unstake = subtensor.unstake
         self.unstake_multiple = subtensor.unstake_multiple
+
+    def compose_call_for_task(
+        self,
+        call_module: str,
+        call_function: str,
+        subnet_id: int,
+        task_id: str,
+        extra_params: Optional[dict[str, Any]] = None,
+    ) -> Any:
+        """
+        Compose a chain call with validated `(subnet_id, task_id)` in `call_params`.
+
+        Runtime pallets must expose matching extrinsic names and parameter shapes.
+        For async subtensor, ``substrate.compose_call`` returns an awaitable.
+        """
+        call_params = self._task_scopes.scope_call_params(
+            subnet_id=subnet_id,
+            task_id=task_id,
+            extra_params=extra_params,
+        )
+        return self._subtensor.substrate.compose_call(
+            call_module=call_module,
+            call_function=call_function,
+            call_params=call_params,
+        )
+
+    async def sign_and_send_extrinsic_for_task(
+        self,
+        call_module: str,
+        call_function: str,
+        subnet_id: int,
+        task_id: str,
+        wallet: "Wallet",
+        extra_params: Optional[dict[str, Any]] = None,
+        *,
+        wait_for_inclusion: bool = True,
+        wait_for_finalization: bool = False,
+        sign_with: str = "coldkey",
+        use_nonce: bool = False,
+        period: Optional[int] = None,
+        nonce_key: str = "hotkey",
+        raise_error: bool = False,
+    ) -> tuple[bool, str]:
+        """
+        Compose a task-scoped call and submit it (sync or async Subtensor).
+
+        ``substrate.compose_call`` may return a coroutine on ``AsyncSubtensor``; this
+        method awaits it when needed, then dispatches to ``sign_and_send_extrinsic``.
+        """
+        call = self.compose_call_for_task(
+            call_module=call_module,
+            call_function=call_function,
+            subnet_id=subnet_id,
+            task_id=task_id,
+            extra_params=extra_params,
+        )
+        if inspect.isawaitable(call):
+            call = await call
+
+        send = self._subtensor.sign_and_send_extrinsic
+        kwargs = dict(
+            call=call,
+            wallet=wallet,
+            wait_for_inclusion=wait_for_inclusion,
+            wait_for_finalization=wait_for_finalization,
+            sign_with=sign_with,
+            use_nonce=use_nonce,
+            period=period,
+            nonce_key=nonce_key,
+            raise_error=raise_error,
+        )
+        if inspect.iscoroutinefunction(send):
+            return await send(**kwargs)
+        return send(**kwargs)

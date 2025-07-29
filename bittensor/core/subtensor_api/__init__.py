@@ -11,6 +11,7 @@ from .neurons import Neurons as _Neurons
 from .queries import Queries as _Queries
 from .staking import Staking as _Staking
 from .subnets import Subnets as _Subnets
+from .task_scopes import TaskScopes as _TaskScopes
 from .utils import add_legacy_methods as _add_classic_fields
 from .wallets import Wallets as _Wallets
 
@@ -109,11 +110,16 @@ class SubtensorApi:
 
         self.determine_block_hash = self._subtensor.determine_block_hash
         self.encode_params = self._subtensor.encode_params
+        self.query_subtensor_for_task = self.queries.query_subtensor_for_task
+        self.compose_call_for_task = self.extrinsics.compose_call_for_task
+        self.sign_and_send_extrinsic_for_task = (
+            self.extrinsics.sign_and_send_extrinsic_for_task
+        )
         self.sign_and_send_extrinsic = self._subtensor.sign_and_send_extrinsic
         self.start_call = self._subtensor.start_call
         self.wait_for_block = self._subtensor.wait_for_block
 
-        # adds all Subtensor methods into main level os SubtensorApi class
+        # adds all Subtensor methods into main level of SubtensorApi class
         if legacy_methods:
             _add_classic_fields(self)
 
@@ -250,3 +256,8 @@ class SubtensorApi:
     def wallets(self):
         """Property of interaction methods with cold/hotkeys, and balances, etc."""
         return _Wallets(self._subtensor)
+
+    @property
+    def task_scopes(self):
+        """Property for subnet-aware `(subnet_id, task_id)` helpers."""
+        return _TaskScopes(self._subtensor)
