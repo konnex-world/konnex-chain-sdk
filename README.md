@@ -87,6 +87,16 @@ Profiles include endpoint defaults plus fallback/archive endpoint sets and are a
 - `bittensor.core.settings.get_konnex_network_profile(...)`
 - `SubtensorApi.get_konnex_network_profile(...)`
 
+`SubtensorApi` now auto-applies profile fallback/archive defaults when initialized with
+`network="konnex-devnet"` or `network="konnex-testnet"` (unless explicitly overridden).
+
+You can also enforce runtime compatibility in client code:
+
+```python
+api = bt.SubtensorApi(network="konnex-testnet")
+api.ensure_min_spec_version(1000)
+```
+
 ## Legacy Bittensor Notes
 
 Large parts of install and test instructions below still reference upstream Bittensor naming and tooling. Keep that in mind while Konnex-specific docs are expanded.

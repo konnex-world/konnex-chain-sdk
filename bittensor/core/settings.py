@@ -73,11 +73,13 @@ KONNEX_NETWORK_PROFILES: dict[str, dict[str, object]] = {
         "endpoint": KONNEX_DEVNET_ENTRYPOINT,
         "fallback_endpoints": [LOCAL_ENTRYPOINT],
         "archive_endpoints": [ARCHIVE_ENTRYPOINT],
+        "min_spec_version": int(os.getenv("KONNEX_DEVNET_MIN_SPEC_VERSION") or 0),
     },
     "konnex-testnet": {
         "endpoint": KONNEX_TESTNET_ENTRYPOINT,
         "fallback_endpoints": [FINNEY_TEST_ENTRYPOINT],
         "archive_endpoints": [ARCHIVE_ENTRYPOINT],
+        "min_spec_version": int(os.getenv("KONNEX_TESTNET_MIN_SPEC_VERSION") or 0),
     },
 }
 
@@ -100,6 +102,7 @@ def get_konnex_network_profile(profile_name: str) -> dict[str, object]:
         "endpoint": profile["endpoint"],
         "fallback_endpoints": list(profile["fallback_endpoints"]),
         "archive_endpoints": list(profile["archive_endpoints"]),
+        "min_spec_version": profile["min_spec_version"],
     }
 
 DEFAULT_NETWORK = NETWORKS[0]
