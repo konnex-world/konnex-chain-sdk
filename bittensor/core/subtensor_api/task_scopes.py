@@ -41,6 +41,23 @@ class TaskScopes:
         """Return storage query params for an existing `TaskScope` (already validated)."""
         return [scope.subnet_id, scope.task_id]
 
+    def extend_params(
+        self,
+        subnet_id: int,
+        task_id: str,
+        *extra_params: object,
+    ) -> list[object]:
+        """Return canonical query params with additional positional values appended."""
+        return self.scope_params(subnet_id=subnet_id, task_id=task_id) + list(extra_params)
+
+    def extend_params_from_scope(
+        self,
+        scope: TaskScope,
+        *extra_params: object,
+    ) -> list[object]:
+        """Return canonical query params from `TaskScope` with extra positional values."""
+        return self.scope_params_from_scope(scope) + list(extra_params)
+
     def scope_call_params(
         self,
         subnet_id: int,

@@ -64,6 +64,17 @@ This SDK is the chain-facing toolkit that supports those task, verification, and
 - Robot contracts and PoPW: [Robot-to-Robot Contracts & PoPW](https://docs.konnex.world/docs/robot-to-robot-contracts-and-popw)
 - SDK docs area: [SDK Overview](https://docs.konnex.world/sdk/overview)
 
+## Task-Scoped API Surface
+
+Recent Konnex SDK extensions standardize task-scoped chain access using `(subnet_id, task_id)`:
+
+- `task_scope_params*` helpers for canonical query param tuples.
+- `query_subtensor_for_task*` and `query_map_subtensor_for_task*` for Subtensor storage access.
+- `query_module_for_task*` for module-level task-scoped queries with extra params.
+- `compose_call_for_task*` and `sign_and_send_extrinsic_for_task*` for task-scoped extrinsics.
+
+All `*from_scope` variants accept a pre-built `TaskScope` object for safer composition in higher-level workflows.
+
 ## Legacy Bittensor Notes
 
 Large parts of install and test instructions below still reference upstream Bittensor naming and tooling. Keep that in mind while Konnex-specific docs are expanded.
