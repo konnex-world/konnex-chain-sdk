@@ -129,3 +129,14 @@ def test_runtime_spec_version_and_guard(monkeypatch):
     assert api.ensure_min_spec_version(1200) is True
     with pytest.raises(RuntimeError, match="below required"):
         api.ensure_min_spec_version(2000)
+
+
+def test_escrow_shortcuts_exposed_on_subtensor_api():
+    api = SubtensorApi(network="latent-lite", mock=True)
+    assert callable(api.create_escrow_call)
+    assert callable(api.submit_create_escrow)
+    assert callable(api.deposit_escrow_call)
+    assert callable(api.release_escrow_call)
+    assert callable(api.cancel_escrow_call)
+    assert callable(api.query_escrow_by_task)
+    assert callable(api.query_escrow_events_by_task)

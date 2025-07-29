@@ -72,8 +72,29 @@ Recent Konnex SDK extensions standardize task-scoped chain access using `(subnet
 - `query_subtensor_for_task*` and `query_map_subtensor_for_task*` for Subtensor storage access.
 - `query_module_for_task*` for module-level task-scoped queries with extra params.
 - `compose_call_for_task*` and `sign_and_send_extrinsic_for_task*` for task-scoped extrinsics.
+- `Escrow` helper methods for task-scoped escrow compose/submit/query flows.
 
 All `*from_scope` variants accept a pre-built `TaskScope` object for safer composition in higher-level workflows.
+
+### Escrow Helper Preview
+
+```python
+api = bt.SubtensorApi(network="konnex-testnet")
+
+# compose extrinsic calls
+call = api.create_escrow_call(
+    subnet_id=1,
+    task_id="task-42",
+    payer="5F...",
+    payee="5G...",
+    amount_rao=1_000_000_000,
+    timeout_blocks=1200,
+)
+
+# query by task scope
+escrow_state = api.query_escrow_by_task(subnet_id=1, task_id="task-42")
+events = api.query_escrow_events_by_task(subnet_id=1, task_id="task-42")
+```
 
 ## Konnex Network Profiles
 

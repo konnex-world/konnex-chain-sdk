@@ -6,6 +6,7 @@ from bittensor.core.subtensor import Subtensor as _Subtensor
 from .chain import Chain as _Chain
 from .commitments import Commitments as _Commitments
 from .delegates import Delegates as _Delegates
+from .escrow import Escrow as _Escrow
 from .extrinsics import Extrinsics as _Extrinsics
 from .metagraphs import Metagraphs as _Metagraphs
 from .neurons import Neurons as _Neurons
@@ -168,6 +169,13 @@ class SubtensorApi:
         self.start_call = self._subtensor.start_call
         self.wait_for_block = self._subtensor.wait_for_block
         self.konnex_network_profiles = settings.KONNEX_NETWORK_PROFILES
+        self.create_escrow_call = self.escrow.create_escrow_call
+        self.submit_create_escrow = self.escrow.submit_create_escrow
+        self.deposit_escrow_call = self.escrow.deposit_escrow_call
+        self.release_escrow_call = self.escrow.release_escrow_call
+        self.cancel_escrow_call = self.escrow.cancel_escrow_call
+        self.query_escrow_by_task = self.escrow.query_escrow_by_task
+        self.query_escrow_events_by_task = self.escrow.query_escrow_events_by_task
 
         # adds all Subtensor methods into main level of SubtensorApi class
         if legacy_methods:
@@ -308,6 +316,11 @@ class SubtensorApi:
     def extrinsics(self):
         """Property to access extrinsics methods."""
         return _Extrinsics(self._subtensor)
+
+    @property
+    def escrow(self):
+        """Property to access task-scoped escrow helper methods."""
+        return _Escrow(self._subtensor)
 
     @property
     def metagraphs(self):
