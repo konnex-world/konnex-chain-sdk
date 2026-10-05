@@ -1,6 +1,6 @@
 import copy
+from collections import OrderedDict
 from datetime import datetime, timezone
-from functools import lru_cache
 from typing import TYPE_CHECKING, Any, Iterable, Optional, Union, cast
 
 import numpy as np
@@ -114,6 +114,11 @@ if TYPE_CHECKING:
 class Subtensor(SubtensorMixin):
     """Thin layer for interacting with Substrate Interface. Mostly a collection of frequently used calls."""
 
+    # Upper bound on the per-instance block-hash cache. Matches the previous
+    # `lru_cache(maxsize=128)` budget, but is now scoped to a single instance
+    # instead of leaking instances into a class-level cache.
+    _BLOCK_HASH_CACHE_MAX_ENTRIES = 128
+
     def __init__(
         self,
         network: Optional[str] = None,
@@ -164,6 +169,20 @@ class Subtensor(SubtensorMixin):
             logging.info(
                 f"Connected to {self.network} network and {self.chain_endpoint}."
             )
+        # Per-instance cache for block hashes.
+        #
+        # SECURITY/PERFORMANCE: this used to be `@lru_cache(maxsize=128)` applied
+        # to the method, i.e. a class-level cache whose implicit key included
+        # `self`. That pinned every Subtensor instance (and the websocket
+        # connection it owns) in memory for the process lifetime, and a busy
+        # process evicted its own entries as soon as 128 distinct instances had
+        # been seen. Caching per instance bounds the lifetime to the instance
+        # itself and scopes entries to the connection they came from.
+        #
+        # OrderedDict is used instead of a plain dict so the size cap can evict
+        # in FIFO order; without a bound a long-lived Subtensor would grow this
+        # cache without limit as block numbers advance.
+        self._block_hash_cache: "OrderedDict[int, str]" = OrderedDict()
 
     def __enter__(self):
         return self
@@ -687,9 +706,18 @@ class Subtensor(SubtensorMixin):
         """
         return self.substrate.get_block_number(None)
 
-    @lru_cache(maxsize=128)
     def _get_block_hash(self, block_id: int):
-        return self.substrate.get_block_hash(block_id)
+        # See the note in __init__: this is a per-instance, size-bounded cache.
+        # Eviction is FIFO, which is appropriate here because callers look up
+        # recent blocks far more often than ancient ones.
+        cached = self._block_hash_cache.get(block_id)
+        if cached is not None:
+            return cached
+        block_hash = self.substrate.get_block_hash(block_id)
+        self._block_hash_cache[block_id] = block_hash
+        while len(self._block_hash_cache) > self._BLOCK_HASH_CACHE_MAX_ENTRIES:
+            self._block_hash_cache.popitem(last=False)
+        return block_hash
 
     def get_block_hash(self, block: Optional[int] = None) -> str:
         """
