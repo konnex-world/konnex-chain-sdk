@@ -976,9 +976,17 @@ class Axon:
                 ):
                     raise Exception("Nonce is too old, a newer one was last processed")
 
-            if synapse.dendrite.signature and not keypair.verify(
-                message, synapse.dendrite.signature
-            ):
+            # SECURITY: a missing signature must be rejected outright. The previous
+            # guard used `synapse.dendrite.signature and not keypair.verify(...)`,
+            # which short-circuits on a falsy signature (None or "") and therefore
+            # let any unauthenticated caller impersonate an arbitrary dendrite
+            # hotkey. This mirrors the "missing => reject" behaviour already used
+            # by the body-hash check in verify_body_integrity().
+            if not synapse.dendrite.signature:
+                raise Exception(
+                    "Missing Signature: request must include a dendrite signature"
+                )
+            if not keypair.verify(message, synapse.dendrite.signature):
                 raise Exception(
                     f"Signature mismatch with {message} and {synapse.dendrite.signature}"
                 )
@@ -1198,7 +1206,7 @@ class AxonMiddleware(BaseHTTPMiddleware):
             synapse = log_and_handle_error(synapse, e, start_time=start_time)
             response = create_error_response(synapse)
 
-        # Logs the end of request processing and returns the response
+        # Logs the end of request processing
         finally:
             # Log the details of the processed synapse, including total size, name, hotkey, IP, port,
             # status code, and status message, using the debug level of the logger.
@@ -1215,8 +1223,13 @@ class AxonMiddleware(BaseHTTPMiddleware):
                     f"axon     | --> | {response.headers.get('content-length', -1)} B | {synapse.name} | None | None | 200 | Success "
                 )
 
-            # Return the response to the requester.
-            return response
+        # Return the response to the requester.
+        # NOTE: the return is deliberately outside the `finally` block. A `return`
+        # inside `finally` discards any in-flight exception (including
+        # asyncio.CancelledError, which inherits from BaseException and is not
+        # caught by the `except Exception` clauses above), silently converting
+        # failures into a normal return and breaking cancellation semantics.
+        return response
 
     async def preprocess(self, request: "Request") -> "Synapse":
         """
